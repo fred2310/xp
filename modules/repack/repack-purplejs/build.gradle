@@ -1,0 +1,13 @@
+apply from: "$rootDir/gradle/osgi.gradle"
+
+dependencies {
+    compile( 'io.purplejs:purplejs-core:0.8.0' ) {
+        transitive = false
+    }
+}
+
+bundle {
+    instruction 'Bundle-Name', 'PurpleJS Library'
+    instruction 'Export-Package', 'io.purplejs.*;version=0.8.0'
+    instruction 'Import-Package', '*;resolution:=optional'
+}
