@@ -2,6 +2,7 @@ apply from: "$rootDir/gradle/osgi.gradle"
 
 dependencies {
     compile project( ':script:script-api' )
+    compile project( ':repack:repack-purplejs' )
     testCompile project( path: ':script:script-api', configuration: 'testOutput' )
 }
 
