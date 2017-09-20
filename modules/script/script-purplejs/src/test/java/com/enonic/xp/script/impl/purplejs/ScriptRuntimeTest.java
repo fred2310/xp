@@ -16,7 +16,7 @@ public class ScriptRuntimeTest
         final ResourceKey script = ResourceKey.from( "myapplication:/empty-test.js" );
         final ScriptExports exports = runTestScript( script );
         assertNotNull( exports );
-        assertSame( script, exports.getScript() );
+        assertEquals( script, exports.getScript() );
         assertFalse( exports.hasMethod( "hello" ) );
     }
 

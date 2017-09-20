@@ -1,5 +1,8 @@
 package com.enonic.xp.script.impl.purplejs.executor;
 
+import io.purplejs.core.Engine;
+import io.purplejs.core.EngineBuilder;
+
 import com.enonic.xp.app.Application;
 import com.enonic.xp.resource.ResourceKey;
 import com.enonic.xp.resource.ResourceService;
@@ -10,6 +13,10 @@ import com.enonic.xp.server.RunMode;
 final class ScriptExecutorImpl
     implements ScriptExecutor
 {
+    private final PurpleJsHelper helper = new PurpleJsHelper();
+
+    private Engine engine;
+
     private ScriptSettings scriptSettings;
 
     private ClassLoader classLoader;
@@ -29,7 +36,7 @@ final class ScriptExecutorImpl
     @Override
     public ScriptExports executeMain( final ResourceKey key )
     {
-        return null;
+        return this.helper.toScriptExports( this.application.getKey(), this.engine.require( this.helper.toResourcePath( key ) ) );
     }
 
     @Override
@@ -65,6 +72,9 @@ final class ScriptExecutorImpl
 
     void initialize()
     {
+        this.engine = EngineBuilder.newBuilder().
+            classLoader( this.classLoader ).
+            resourceLoader( this.helper.newResourceLoader( this.application.getKey(), this.resourceService ) ).
+            build();
     }
 }
-
