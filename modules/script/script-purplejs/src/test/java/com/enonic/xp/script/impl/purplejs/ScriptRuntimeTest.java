@@ -3,7 +3,9 @@ package com.enonic.xp.script.impl.purplejs;
 import org.junit.Test;
 
 import com.enonic.xp.resource.ResourceKey;
+import com.enonic.xp.resource.ResourceProblemException;
 import com.enonic.xp.script.ScriptExports;
+import com.enonic.xp.script.serializer.MapSerializable;
 
 import static org.junit.Assert.*;
 
@@ -20,14 +22,13 @@ public class ScriptRuntimeTest
         assertFalse( exports.hasMethod( "hello" ) );
     }
 
-    /*
     @Test
     public void testExecuteExported()
     {
         final ResourceKey script = ResourceKey.from( "myapplication:/export-test.js" );
         final ScriptExports exports = runTestScript( script );
         assertNotNull( exports );
-        assertSame( script, exports.getScript() );
+        assertEquals( script, exports.getScript() );
         assertTrue( exports.hasMethod( "hello" ) );
         assertEquals( "Hello World!", exports.executeMethod( "hello", "World" ).getValue() );
     }
@@ -38,7 +39,7 @@ public class ScriptRuntimeTest
         final ResourceKey script = ResourceKey.from( "myapplication:/export-test.js" );
         final ScriptExports exports = runTestScript( script );
         assertNotNull( exports );
-        assertSame( script, exports.getScript() );
+        assertEquals( script, exports.getScript() );
         assertTrue( exports.hasMethod( "helloObject" ) );
         assertEquals( "Hello World!",
                       exports.executeMethod( "helloObject", (MapSerializable) gen -> gen.value( "name", "World" ) ).getValue() );
@@ -50,7 +51,7 @@ public class ScriptRuntimeTest
         final ResourceKey script = ResourceKey.from( "myapplication:/resolve/resolve-test.js" );
         final ScriptExports exports = runTestScript( script );
         assertNotNull( exports );
-        assertSame( script, exports.getScript() );
+        assertEquals( script, exports.getScript() );
     }
 
     @Test
@@ -106,6 +107,7 @@ public class ScriptRuntimeTest
         }
     }
 
+    /*
     @Test
     public void testCache()
     {
@@ -125,5 +127,6 @@ public class ScriptRuntimeTest
 
         final ScriptExports exports4 = runTestScript( script );
         assertNotSame( exports1.getRawValue(), exports4.getRawValue() );
-    }*/
+    }
+    */
 }

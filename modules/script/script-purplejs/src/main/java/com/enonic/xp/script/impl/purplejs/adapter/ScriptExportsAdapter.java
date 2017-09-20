@@ -4,6 +4,7 @@ import com.enonic.xp.app.ApplicationKey;
 import com.enonic.xp.resource.ResourceKey;
 import com.enonic.xp.script.ScriptExports;
 import com.enonic.xp.script.ScriptValue;
+import com.enonic.xp.script.impl.purplejs.executor.PurpleJsHelper;
 
 public final class ScriptExportsAdapter
     implements ScriptExports
@@ -39,7 +40,14 @@ public final class ScriptExportsAdapter
     @Override
     public ScriptValue executeMethod( final String name, final Object... args )
     {
-        return toValue( this.exports.executeMethod( name, args ) );
+        try
+        {
+            return toValue( this.exports.executeMethod( name, convertArgs( args ) ) );
+        }
+        catch ( final RuntimeException e )
+        {
+            throw PurpleJsHelper.translateException( this.applicationKey, e );
+        }
     }
 
     @Override
@@ -50,6 +58,17 @@ public final class ScriptExportsAdapter
 
     private ScriptValue toValue( final io.purplejs.core.value.ScriptValue from )
     {
-        return null;
+        return new ScriptValueAdapter( from );
+    }
+
+    private Object[] convertArgs( final Object... args )
+    {
+        final Object[] newArgs = new Object[args.length];
+        for ( int i = 0; i < args.length; i++ )
+        {
+            newArgs[i] = PurpleJsHelper.toJsObject( args[i] );
+        }
+
+        return newArgs;
     }
 }

@@ -36,7 +36,14 @@ final class ScriptExecutorImpl
     @Override
     public ScriptExports executeMain( final ResourceKey key )
     {
-        return this.helper.toScriptExports( this.application.getKey(), this.engine.require( this.helper.toResourcePath( key ) ) );
+        try
+        {
+            return this.helper.toScriptExports( this.application.getKey(), this.engine.require( this.helper.toResourcePath( key ) ) );
+        }
+        catch ( final RuntimeException e )
+        {
+            throw PurpleJsHelper.translateException( this.application.getKey(), e );
+        }
     }
 
     @Override
