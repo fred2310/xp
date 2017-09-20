@@ -1,5 +1,11 @@
 package com.enonic.xp.script.impl.purplejs.executor;
 
+import java.util.List;
+import java.util.Map;
+import java.util.stream.Collectors;
+
+import com.google.common.collect.Maps;
+
 import io.purplejs.core.exception.NotFoundException;
 import io.purplejs.core.exception.ProblemException;
 import io.purplejs.core.json.JsonSerializable;
@@ -70,6 +76,14 @@ public final class PurpleJsHelper
         {
             return toJsObject( (MapSerializable) value );
         }
+        else if ( value instanceof List )
+        {
+            return toJsObject( (List) value );
+        }
+        else if ( value instanceof Map )
+        {
+            return toJsObject( (Map) value );
+        }
         else
         {
             return value;
@@ -94,5 +108,19 @@ public final class PurpleJsHelper
         }
 
         return newArgs;
+    }
+
+    @SuppressWarnings("unchecked")
+    private static Object toJsObject( final List value )
+    {
+        return value.stream().map( PurpleJsHelper::toJsObject ).collect( Collectors.toList() );
+    }
+
+    @SuppressWarnings("unchecked")
+    private static Object toJsObject( final Map<?, ?> value )
+    {
+        final Map map = Maps.newHashMap();
+        value.forEach( ( key, value1 ) -> map.put( key, toJsObject( value1 ) ) );
+        return map;
     }
 }
