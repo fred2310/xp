@@ -42,7 +42,7 @@ public final class ScriptExportsAdapter
     {
         try
         {
-            return toValue( this.exports.executeMethod( name, convertArgs( args ) ) );
+            return toValue( this.exports.executeMethod( name, PurpleJsHelper.toJsObjects( args ) ) );
         }
         catch ( final RuntimeException e )
         {
@@ -58,17 +58,11 @@ public final class ScriptExportsAdapter
 
     private ScriptValue toValue( final io.purplejs.core.value.ScriptValue from )
     {
-        return new ScriptValueAdapter( from );
-    }
-
-    private Object[] convertArgs( final Object... args )
-    {
-        final Object[] newArgs = new Object[args.length];
-        for ( int i = 0; i < args.length; i++ )
+        if ( from == null )
         {
-            newArgs[i] = PurpleJsHelper.toJsObject( args[i] );
+            return null;
         }
 
-        return newArgs;
+        return new ScriptValueAdapter( this.applicationKey, from );
     }
 }

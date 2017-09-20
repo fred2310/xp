@@ -1,17 +1,20 @@
 package com.enonic.xp.script.impl.purplejs.executor;
 
 import io.purplejs.core.Engine;
+import io.purplejs.core.EngineBinder;
 import io.purplejs.core.EngineBuilder;
+import io.purplejs.core.EngineModule;
 
 import com.enonic.xp.app.Application;
 import com.enonic.xp.resource.ResourceKey;
 import com.enonic.xp.resource.ResourceService;
 import com.enonic.xp.script.ScriptExports;
+import com.enonic.xp.script.impl.purplejs.function.ApplicationVariable;
 import com.enonic.xp.script.runtime.ScriptSettings;
 import com.enonic.xp.server.RunMode;
 
 final class ScriptExecutorImpl
-    implements ScriptExecutor
+    implements ScriptExecutor, EngineModule
 {
     private final PurpleJsHelper helper = new PurpleJsHelper();
 
@@ -82,6 +85,13 @@ final class ScriptExecutorImpl
         this.engine = EngineBuilder.newBuilder().
             classLoader( this.classLoader ).
             resourceLoader( this.helper.newResourceLoader( this.application.getKey(), this.resourceService ) ).
+            module( this ).
             build();
+    }
+
+    @Override
+    public void configure( final EngineBinder binder )
+    {
+        binder.globalVariable( "app", new ApplicationVariable( this.application ) );
     }
 }

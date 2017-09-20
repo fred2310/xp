@@ -5,15 +5,20 @@ import java.util.Map;
 import java.util.Set;
 import java.util.stream.Collectors;
 
+import com.enonic.xp.app.ApplicationKey;
 import com.enonic.xp.script.ScriptValue;
+import com.enonic.xp.script.impl.purplejs.executor.PurpleJsHelper;
 
 final class ScriptValueAdapter
     implements ScriptValue
 {
+    private final ApplicationKey applicationKey;
+
     private final io.purplejs.core.value.ScriptValue value;
 
-    ScriptValueAdapter( final io.purplejs.core.value.ScriptValue value )
+    ScriptValueAdapter( final ApplicationKey applicationKey, final io.purplejs.core.value.ScriptValue value )
     {
+        this.applicationKey = applicationKey;
         this.value = value;
     }
 
@@ -69,13 +74,13 @@ final class ScriptValueAdapter
     public ScriptValue getMember( final String key )
     {
         final io.purplejs.core.value.ScriptValue value = this.value.getMember( key );
-        return value != null ? new ScriptValueAdapter( value ) : null;
+        return value != null ? new ScriptValueAdapter( this.applicationKey, value ) : null;
     }
 
     @Override
     public List<ScriptValue> getArray()
     {
-        return this.value.getArray().stream().map( ScriptValueAdapter::new ).collect( Collectors.toList() );
+        return this.value.getArray().stream().map( e -> new ScriptValueAdapter( this.applicationKey, e ) ).collect( Collectors.toList() );
     }
 
     @Override
@@ -93,7 +98,14 @@ final class ScriptValueAdapter
     @Override
     public ScriptValue call( final Object... args )
     {
-        final io.purplejs.core.value.ScriptValue value = this.value.call( args );
-        return value != null ? new ScriptValueAdapter( value ) : null;
+        try
+        {
+            final io.purplejs.core.value.ScriptValue value = this.value.call( PurpleJsHelper.toJsObjects( args ) );
+            return value != null ? new ScriptValueAdapter( this.applicationKey, value ) : null;
+        }
+        catch ( final RuntimeException e )
+        {
+            throw PurpleJsHelper.translateException( this.applicationKey, e );
+        }
     }
 }

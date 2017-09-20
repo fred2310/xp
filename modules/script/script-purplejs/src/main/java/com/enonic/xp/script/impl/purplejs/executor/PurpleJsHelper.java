@@ -84,4 +84,15 @@ public final class PurpleJsHelper
             gen.end();
         };
     }
+
+    public static Object[] toJsObjects( final Object... args )
+    {
+        final Object[] newArgs = new Object[args.length];
+        for ( int i = 0; i < args.length; i++ )
+        {
+            newArgs[i] = toJsObject( args[i] );
+        }
+
+        return newArgs;
+    }
 }
