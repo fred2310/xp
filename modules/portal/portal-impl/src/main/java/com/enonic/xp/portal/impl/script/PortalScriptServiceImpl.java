@@ -53,7 +53,7 @@ public final class PortalScriptServiceImpl
         return this.scriptRuntime.execute( script );
     }
 
-    @Reference
+    @Reference(target = "(provider=delegate)")
     public void setScriptRuntimeFactory( final ScriptRuntimeFactory scriptRuntimeFactory )
     {
         this.scriptRuntimeFactory = scriptRuntimeFactory;

@@ -4,23 +4,21 @@ import org.osgi.service.component.annotations.Activate;
 import org.osgi.service.component.annotations.Component;
 import org.osgi.service.component.annotations.Reference;
 
-import com.enonic.xp.app.ApplicationInvalidator;
-import com.enonic.xp.app.ApplicationKey;
 import com.enonic.xp.script.runtime.ScriptRuntime;
 import com.enonic.xp.script.runtime.ScriptRuntimeFactory;
 import com.enonic.xp.script.runtime.ScriptSettings;
 
-@Component(immediate = true, service = {ScriptRuntimeFactory.class, ApplicationInvalidator.class})
+@Component(immediate = true, property = "provider=delegate")
 public final class ScriptRuntimeFactoryDelegate
-    implements ScriptRuntimeFactory, ApplicationInvalidator
+    implements ScriptRuntimeFactory
 {
     private final static String SWITCH_PROP = "xp.usePurpleJs";
 
-    private ScriptRuntimeProvider standardProvider;
+    private ScriptRuntimeFactory standardProvider;
 
-    private ScriptRuntimeProvider purpleJsProvider;
+    private ScriptRuntimeFactory purpleJsProvider;
 
-    private ScriptRuntimeProvider provider;
+    private ScriptRuntimeFactory provider;
 
     @Activate
     public void activate()
@@ -41,20 +39,14 @@ public final class ScriptRuntimeFactoryDelegate
         this.provider.dispose( runtime );
     }
 
-    @Override
-    public void invalidate( final ApplicationKey key )
-    {
-        this.provider.invalidate( key );
-    }
-
     @Reference(target = "(provider=standard)")
-    public void setStandardProvider( final ScriptRuntimeProvider provider )
+    public void setStandardProvider( final ScriptRuntimeFactory provider )
     {
         this.standardProvider = provider;
     }
 
     @Reference(target = "(provider=purpleJs)")
-    public void setPurpleJsProvider( final ScriptRuntimeProvider provider )
+    public void setPurpleJsProvider( final ScriptRuntimeFactory provider )
     {
         this.purpleJsProvider = provider;
     }
