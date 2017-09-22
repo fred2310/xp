@@ -21,6 +21,7 @@ public final class JavascriptHelperFactory
         final ScriptObjectMirror arrayProto = (ScriptObjectMirror) bindings.get( "Array" );
         final ScriptObjectMirror objectProto = (ScriptObjectMirror) bindings.get( "Object" );
         final ScriptObjectMirror jsonProto = (ScriptObjectMirror) bindings.get( "JSON" );
+        final ScriptObjectMirror dateProto = (ScriptObjectMirror) bindings.get( "Date" );
 
         return new JavascriptHelper()
         {
@@ -40,6 +41,14 @@ public final class JavascriptHelperFactory
             public ScriptObjectMirror parseJson( final String text )
             {
                 return (ScriptObjectMirror) jsonProto.callMember( "parse", text );
+            }
+
+            @Override
+            public ScriptObjectMirror newDateObject( final long time )
+            {
+                final ScriptObjectMirror result = (ScriptObjectMirror) dateProto.newObject();
+                result.callMember( "setTime", time );
+                return result;
             }
         };
     }

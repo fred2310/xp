@@ -8,5 +8,7 @@ public interface JavascriptHelper
 
     ScriptObjectMirror newJsObject();
 
+    ScriptObjectMirror newDateObject( long time );
+
     ScriptObjectMirror parseJson( String text );
 }
