@@ -6,6 +6,7 @@ import java.util.Set;
 import java.util.stream.Collectors;
 
 import com.enonic.xp.app.ApplicationKey;
+import com.enonic.xp.convert.Converters;
 import com.enonic.xp.script.ScriptValue;
 import com.enonic.xp.script.impl.purplejs.executor.PurpleJsHelper;
 
@@ -55,7 +56,8 @@ final class ScriptValueAdapter
     @Override
     public <T> T getValue( final Class<T> type )
     {
-        return this.value.getValue( type );
+        final Object value = this.value.getValue();
+        return value != null ? Converters.convert( value, type ) : null;
     }
 
     @Override

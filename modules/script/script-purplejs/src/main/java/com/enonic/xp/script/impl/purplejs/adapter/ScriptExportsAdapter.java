@@ -53,7 +53,7 @@ public final class ScriptExportsAdapter
     @Override
     public Object getRawValue()
     {
-        return null;
+        return this.exports.getValue().getRaw();
     }
 
     private ScriptValue toValue( final io.purplejs.core.value.ScriptValue from )
