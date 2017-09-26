@@ -2,8 +2,11 @@ apply from: "$rootDir/gradle/osgi.gradle"
 
 dependencies {
     compile project( ':script:script-api' )
-    compile project( ':repack:repack-purplejs' )
+    // compile project( ':repack:repack-purplejs' )
     compile 'com.google.code.gson:gson:2.8.1'
+    compile( 'io.purplejs:purplejs-core:1.0.0-SNAPSHOT' ) {
+        changing = true
+    }
     testCompile project( path: ':script:script-api', configuration: 'testOutput' )
 }
 

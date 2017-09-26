@@ -33,5 +33,5 @@ public interface ScriptExecutor
 
     ResourceService getResourceService();
 
-    void runDisposers();
+    void dispose();
 }

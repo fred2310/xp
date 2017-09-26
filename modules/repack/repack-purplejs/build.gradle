@@ -3,6 +3,7 @@ apply from: "$rootDir/gradle/osgi.gradle"
 dependencies {
     compile( 'io.purplejs:purplejs-core:0.8.0' ) {
         transitive = false
+        changing = true
     }
 }
 

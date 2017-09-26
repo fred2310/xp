@@ -58,7 +58,7 @@ public final class ScriptExecutorManager
         final ScriptExecutor executor = this.executors.remove( key );
         if ( executor != null )
         {
-            executor.runDisposers();
+            executor.dispose();
         }
     }
 

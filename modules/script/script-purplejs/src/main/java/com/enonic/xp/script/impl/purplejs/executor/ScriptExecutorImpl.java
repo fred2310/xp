@@ -4,6 +4,7 @@ import io.purplejs.core.Engine;
 import io.purplejs.core.EngineBinder;
 import io.purplejs.core.EngineBuilder;
 import io.purplejs.core.EngineModule;
+import io.purplejs.core.resource.ResourceResolverBuilder;
 
 import com.enonic.xp.app.Application;
 import com.enonic.xp.resource.ResourceKey;
@@ -50,9 +51,9 @@ final class ScriptExecutorImpl
     }
 
     @Override
-    public void runDisposers()
+    public void dispose()
     {
-        // this.disposers.values().forEach( Runnable::run );
+        this.engine.dispose();
     }
 
     void setScriptSettings( final ScriptSettings scriptSettings )
@@ -85,6 +86,10 @@ final class ScriptExecutorImpl
         this.engine = EngineBuilder.newBuilder().
             classLoader( this.classLoader ).
             resourceLoader( this.helper.newResourceLoader( this.application.getKey(), this.resourceService ) ).
+            resourceResolver( ResourceResolverBuilder.newBuilder().
+                rootPath( "/", "/site" ).
+                searchPath( "/lib", "/site/lib" ).
+                build() ).
             module( this ).
             build();
     }
