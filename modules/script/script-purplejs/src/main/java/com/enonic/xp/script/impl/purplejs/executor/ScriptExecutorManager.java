@@ -9,6 +9,7 @@ import com.enonic.xp.app.ApplicationKey;
 import com.enonic.xp.app.ApplicationNotFoundException;
 import com.enonic.xp.app.ApplicationService;
 import com.enonic.xp.resource.ResourceService;
+import com.enonic.xp.script.impl.purplejs.service.ServiceRegistryImpl;
 import com.enonic.xp.script.runtime.ScriptSettings;
 import com.enonic.xp.server.RunMode;
 
@@ -45,7 +46,7 @@ public final class ScriptExecutorManager
         final ScriptExecutorImpl executor = new ScriptExecutorImpl();
         executor.setScriptSettings( this.scriptSettings );
         executor.setClassLoader( classLoader );
-        // executor.setServiceRegistry( new ServiceRegistryImpl( application.getBundle().getBundleContext() ) );
+        executor.setServiceRegistry( new ServiceRegistryImpl( application.getBundle().getBundleContext() ) );
         executor.setResourceService( this.resourceService );
         executor.setApplication( application );
         executor.setRunMode( RunMode.get() );

@@ -4,13 +4,16 @@ import io.purplejs.core.Engine;
 import io.purplejs.core.EngineBinder;
 import io.purplejs.core.EngineBuilder;
 import io.purplejs.core.EngineModule;
+import io.purplejs.core.inject.BeanInjector;
 import io.purplejs.core.resource.ResourceResolverBuilder;
 
 import com.enonic.xp.app.Application;
 import com.enonic.xp.resource.ResourceKey;
 import com.enonic.xp.resource.ResourceService;
 import com.enonic.xp.script.ScriptExports;
+import com.enonic.xp.script.impl.purplejs.bean.BeanInjectorImpl;
 import com.enonic.xp.script.impl.purplejs.function.ApplicationVariable;
+import com.enonic.xp.script.impl.purplejs.service.ServiceRegistry;
 import com.enonic.xp.script.runtime.ScriptSettings;
 import com.enonic.xp.server.RunMode;
 
@@ -29,12 +32,32 @@ final class ScriptExecutorImpl
 
     private Application application;
 
+    private ServiceRegistry serviceRegistry;
+
     private RunMode runMode;
 
     @Override
     public ResourceService getResourceService()
     {
         return resourceService;
+    }
+
+    @Override
+    public Application getApplication()
+    {
+        return application;
+    }
+
+    @Override
+    public ServiceRegistry getServiceRegistry()
+    {
+        return serviceRegistry;
+    }
+
+    @Override
+    public ScriptSettings getScriptSettings()
+    {
+        return scriptSettings;
     }
 
     @Override
@@ -66,6 +89,11 @@ final class ScriptExecutorImpl
         this.classLoader = classLoader;
     }
 
+    public void setServiceRegistry( final ServiceRegistry serviceRegistry )
+    {
+        this.serviceRegistry = serviceRegistry;
+    }
+
     void setResourceService( final ResourceService resourceService )
     {
         this.resourceService = resourceService;
@@ -83,6 +111,7 @@ final class ScriptExecutorImpl
 
     void initialize()
     {
+        final BeanInjector beanInjector = new BeanInjectorImpl( this );
         this.engine = EngineBuilder.newBuilder().
             classLoader( this.classLoader ).
             resourceLoader( this.helper.newResourceLoader( this.application.getKey(), this.resourceService ) ).
@@ -90,6 +119,7 @@ final class ScriptExecutorImpl
                 rootPath( "/", "/site" ).
                 searchPath( "/lib", "/site/lib" ).
                 build() ).
+            beanInjector( beanInjector ).
             module( this ).
             build();
     }
