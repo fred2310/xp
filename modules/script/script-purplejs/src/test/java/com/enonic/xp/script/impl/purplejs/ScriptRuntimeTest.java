@@ -1,5 +1,6 @@
 package com.enonic.xp.script.impl.purplejs;
 
+import org.junit.Ignore;
 import org.junit.Test;
 
 import com.enonic.xp.resource.ResourceKey;
@@ -46,6 +47,7 @@ public class ScriptRuntimeTest
     }
 
     @Test
+    @Ignore
     public void testResolve()
     {
         final ResourceKey script = ResourceKey.from( "myapplication:/resolve/resolve-test.js" );

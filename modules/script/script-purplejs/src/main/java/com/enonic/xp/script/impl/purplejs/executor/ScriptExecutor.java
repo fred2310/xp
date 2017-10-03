@@ -11,8 +11,6 @@ public interface ScriptExecutor
 {
     Application getApplication();
 
-    ServiceRegistry getServiceRegistry();
-
     /*
     Object executeRequire( ResourceKey key );
 
@@ -27,6 +25,7 @@ public interface ScriptExecutor
 
     void registerDisposer( final ResourceKey key, Runnable callback );
     */
+    ServiceRegistry getServiceRegistry();
 
     ScriptExports executeMain( ResourceKey key );
 

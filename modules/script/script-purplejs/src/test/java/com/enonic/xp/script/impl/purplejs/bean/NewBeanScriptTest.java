@@ -1,5 +1,6 @@
 package com.enonic.xp.script.impl.purplejs.bean;
 
+import org.junit.Ignore;
 import org.junit.Test;
 
 import com.enonic.xp.resource.ResourceKey;
@@ -8,6 +9,7 @@ import com.enonic.xp.script.impl.purplejs.AbstractScriptTest;
 
 import static org.junit.Assert.*;
 
+@Ignore
 public class NewBeanScriptTest
     extends AbstractScriptTest
 {

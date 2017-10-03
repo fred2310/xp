@@ -1,18 +1,19 @@
 package com.enonic.xp.script.impl.purplejs.executor;
 
+import java.util.Map;
+
 import io.purplejs.core.Engine;
 import io.purplejs.core.EngineBinder;
 import io.purplejs.core.EngineBuilder;
 import io.purplejs.core.EngineModule;
-import io.purplejs.core.inject.BeanInjector;
-import io.purplejs.core.resource.ResourceResolverBuilder;
+import io.purplejs.core.require.RequireResolverBuilder;
 
 import com.enonic.xp.app.Application;
 import com.enonic.xp.resource.ResourceKey;
 import com.enonic.xp.resource.ResourceService;
 import com.enonic.xp.script.ScriptExports;
-import com.enonic.xp.script.impl.purplejs.bean.BeanInjectorImpl;
-import com.enonic.xp.script.impl.purplejs.function.ApplicationVariable;
+import com.enonic.xp.script.impl.purplejs.function.ApplicationInfoBuilder;
+import com.enonic.xp.script.impl.purplejs.function.ScriptFunctions;
 import com.enonic.xp.script.impl.purplejs.service.ServiceRegistry;
 import com.enonic.xp.script.runtime.ScriptSettings;
 import com.enonic.xp.server.RunMode;
@@ -30,34 +31,33 @@ final class ScriptExecutorImpl
 
     private ResourceService resourceService;
 
-    private Application application;
-
     private ServiceRegistry serviceRegistry;
+
+    private Application application;
 
     private RunMode runMode;
 
     @Override
     public ResourceService getResourceService()
     {
-        return resourceService;
+        return this.resourceService;
     }
 
     @Override
     public Application getApplication()
     {
-        return application;
+        return this.application;
     }
 
-    @Override
     public ServiceRegistry getServiceRegistry()
     {
-        return serviceRegistry;
+        return this.serviceRegistry;
     }
 
     @Override
     public ScriptSettings getScriptSettings()
     {
-        return scriptSettings;
+        return this.scriptSettings;
     }
 
     @Override
@@ -89,11 +89,6 @@ final class ScriptExecutorImpl
         this.classLoader = classLoader;
     }
 
-    public void setServiceRegistry( final ServiceRegistry serviceRegistry )
-    {
-        this.serviceRegistry = serviceRegistry;
-    }
-
     void setResourceService( final ResourceService resourceService )
     {
         this.resourceService = resourceService;
@@ -109,17 +104,20 @@ final class ScriptExecutorImpl
         this.runMode = runMode;
     }
 
+    public void setServiceRegistry( final ServiceRegistry serviceRegistry )
+    {
+        this.serviceRegistry = serviceRegistry;
+    }
+
     void initialize()
     {
-        final BeanInjector beanInjector = new BeanInjectorImpl( this );
         this.engine = EngineBuilder.newBuilder().
             classLoader( this.classLoader ).
             resourceLoader( this.helper.newResourceLoader( this.application.getKey(), this.resourceService ) ).
-            resourceResolver( ResourceResolverBuilder.newBuilder().
+            requireResolver( RequireResolverBuilder.newBuilder().
                 rootPath( "/", "/site" ).
                 searchPath( "/lib", "/site/lib" ).
                 build() ).
-            beanInjector( beanInjector ).
             module( this ).
             build();
     }
@@ -127,6 +125,15 @@ final class ScriptExecutorImpl
     @Override
     public void configure( final EngineBinder binder )
     {
-        binder.globalVariable( "app", new ApplicationVariable( this.application ) );
+        final ScriptFunctions functions = new ScriptFunctions( this );
+        binder.globalVariable( "__", functions );
+        binder.globalVariable( "app", buildAppInfo() );
+    }
+
+    private Map<String, Object> buildAppInfo()
+    {
+        final ApplicationInfoBuilder builder = new ApplicationInfoBuilder();
+        builder.application( this.application );
+        return builder.build();
     }
 }
