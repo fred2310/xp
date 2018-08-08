@@ -80,6 +80,12 @@ final class ScriptValueAdapter
     }
 
     @Override
+    public List<Object> getList()
+    {
+        return this.value.getArray().stream().map( e -> new ScriptValueAdapter( this.applicationKey, e ) ).collect( Collectors.toList() );
+    }
+
+    @Override
     public List<ScriptValue> getArray()
     {
         return this.value.getArray().stream().map( e -> new ScriptValueAdapter( this.applicationKey, e ) ).collect( Collectors.toList() );
