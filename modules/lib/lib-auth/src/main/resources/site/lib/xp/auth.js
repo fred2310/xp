@@ -34,6 +34,7 @@ function nullOrValue(value) {
  * @param {string} [params.userStore] Name of user-store where the user is stored. If not specified it will try all available user-stores, in alphabetical order.
  * @param {string} [params.password] Password for the user. Ignored if skipAuth is set to true, mandatory otherwise.
  * @param {boolean} [params.skipAuth=false] Skip authentication.
+ * @param {number} [params.sessionTimeout] Session timeout (in seconds). By default, the value of session.timeout from com.enonic.xp.web.jetty.cfg
  * @returns {object} Information for logged-in user.
  */
 exports.login = function (params) {
@@ -50,6 +51,8 @@ exports.login = function (params) {
     if (params['userStore']) {
         bean.userStore = [].concat(params['userStore']);
     }
+    
+    bean.sessionTimeout = nullOrValue(params['sessionTimeout']);
 
     return __.toNativeObject(bean.login());
 };
@@ -153,12 +156,14 @@ exports.getPrincipal = function (principalKey) {
  * @example-ref examples/auth/getMemberships.js
  *
  * @param {string} principalKey Principal key to retrieve memberships for.
+ * @param {boolean} [transitive=false] Retrieve transitive memberships.
  * @returns {object[]} Returns the list of principals.
  */
-exports.getMemberships = function (principalKey) {
+exports.getMemberships = function (principalKey, transitive) {
     var bean = __.newBean('com.enonic.xp.lib.auth.GetMembershipsHandler');
 
     bean.principalKey = __.nullOrValue(principalKey);
+    bean.transitive = transitive;
 
     return __.toNativeObject(bean.getMemberships());
 };
@@ -323,6 +328,20 @@ exports.findPrincipals = function (params) {
 };
 
 /**
+ * Deletes the principal with the specified key.
+ *
+ * @example-ref examples/auth/deletePrincipal.js
+ *
+ * @param {string} principalKey Principal key to delete.
+ * @returns {boolean} True if deleted, false otherwise.
+ */
+exports.deletePrincipal = function (principalKey) {
+    var bean = __.newBean('com.enonic.xp.lib.auth.DeletePrincipalHandler');
+    bean.principalKey = __.nullOrValue(principalKey);
+    return __.toNativeObject(bean.deletePrincipal());
+};
+
+/**
  * This function returns the ID provider configuration for the current user store.
  * It is meant to be called from an ID provider controller.
  *
@@ -397,4 +416,42 @@ exports.findUsers = function (params) {
     bean.sort = nullOrValue(params.sort);
     bean.includeProfile = !!params.includeProfile;
     return __.toNativeObject(bean.execute());
+};
+
+/**
+ * Creates a role.
+ *
+ * @example-ref examples/auth/createRole.js
+ *
+ * @param {string} name Role name.
+ * @param {string} params.displayName Role display name.
+ * @param {string} params.description as principal description .
+ */
+exports.createRole = function (params) {
+    var bean = __.newBean('com.enonic.xp.lib.auth.CreateRoleHandler');
+
+    bean.name = required(params, 'name');
+    bean.displayName = nullOrValue(params.displayName);
+    bean.description = nullOrValue(params.description);
+
+    return __.toNativeObject(bean.createRole());
+};
+
+/**
+ * Retrieves the role specified and updates it with the changes applied.
+ *
+ * @example-ref examples/auth/modifyRole.js
+ *
+ * @param {object} params JSON parameters.
+ * @param {string} params.key Principal key of the role to modify.
+ * @param {function} params.editor Role editor function to apply to role.
+ * @returns {object} the updated role.
+ */
+exports.modifyRole = function (params) {
+    var bean = __.newBean('com.enonic.xp.lib.auth.ModifyRoleHandler');
+
+    bean.principalKey = required(params, 'key');
+    bean.editor = __.toScriptValue(required(params, 'editor'));
+
+    return __.toNativeObject(bean.modifyRole());
 };

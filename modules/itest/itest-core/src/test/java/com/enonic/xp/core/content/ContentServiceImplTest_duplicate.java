@@ -1,15 +1,12 @@
 package com.enonic.xp.core.content;
 
-import java.time.Duration;
-import java.time.Instant;
-
 import org.junit.Test;
 
 import com.enonic.xp.content.Content;
 import com.enonic.xp.content.ContentPath;
-import com.enonic.xp.content.ContentPublishInfo;
 import com.enonic.xp.content.CreateContentParams;
 import com.enonic.xp.content.DuplicateContentParams;
+import com.enonic.xp.content.DuplicateContentsResult;
 import com.enonic.xp.context.Context;
 import com.enonic.xp.context.ContextAccessor;
 import com.enonic.xp.context.ContextBuilder;
@@ -40,8 +37,7 @@ public class ContentServiceImplTest_duplicate
         throws Exception
     {
         final Content rootContent = createContent( ContentPath.ROOT );
-        final DuplicateContentParams params = new DuplicateContentParams( rootContent.getId() );
-        final Content duplicatedContent = contentService.duplicate( params );
+        final Content duplicatedContent = doDuplicateContent( rootContent );
 
         assertNotNull( duplicatedContent );
         assertEquals( rootContent.getDisplayName(), duplicatedContent.getDisplayName() );
@@ -56,8 +52,7 @@ public class ContentServiceImplTest_duplicate
         final Content rootContent = createContent( ContentPath.ROOT );
         final Content childrenLevel1 = createContent( rootContent.getPath() );
         final Content childrenLevel2 = createContent( childrenLevel1.getPath() );
-        final DuplicateContentParams params = new DuplicateContentParams( childrenLevel2.getId() );
-        final Content duplicatedContent = contentService.duplicate( params );
+        final Content duplicatedContent = doDuplicateContent( childrenLevel2 );
 
         assertNotNull( duplicatedContent );
         assertEquals( childrenLevel2.getDisplayName(), duplicatedContent.getDisplayName() );
@@ -66,19 +61,16 @@ public class ContentServiceImplTest_duplicate
     }
 
     @Test
-    public void publish_info()
+    public void skip_children()
         throws Exception
     {
+        final Content rootContent = createContent( ContentPath.ROOT );
+        final Content childrenLevel1 = createContent( rootContent.getPath() );
+        final Content childrenLevel2 = createContent( childrenLevel1.getPath() );
 
-        final Content rootContent = createContent( ContentPath.ROOT, ContentPublishInfo.create().
-            from( Instant.now().plus( Duration.ofDays( 1 ) ) ).
-            build() );
+        final Content duplicatedContent = doDuplicateContent( rootContent, false );
 
-        final DuplicateContentParams params = new DuplicateContentParams( rootContent.getId() );
-        final Content duplicatedContent = contentService.duplicate( params );
-
-        assertNotNull( duplicatedContent );
-        assertNull( duplicatedContent.getPublishInfo() );
+        assertFalse( duplicatedContent.hasChildren() );
     }
 
     @Test
@@ -121,11 +113,17 @@ public class ContentServiceImplTest_duplicate
         assertEquals( otherUser.getKey(), duplicateContent.getCreator() );
     }
 
-    private Content doDuplicateContent( final Content rootContent )
+    private Content doDuplicateContent( final Content content )
     {
-        final DuplicateContentParams params = new DuplicateContentParams( rootContent.getId() );
-        final Content duplicatedContent = contentService.duplicate( params );
+        return this.doDuplicateContent( content, true );
+    }
 
-        return this.contentService.getById( duplicatedContent.getId() );
+    private Content doDuplicateContent( final Content content, final Boolean includeChildren )
+    {
+        final DuplicateContentParams params =
+            DuplicateContentParams.create().contentId( content.getId() ).includeChildren( includeChildren ).build();
+        final DuplicateContentsResult result = contentService.duplicate( params );
+
+        return this.contentService.getById( result.getDuplicatedContents().first() );
     }
 }

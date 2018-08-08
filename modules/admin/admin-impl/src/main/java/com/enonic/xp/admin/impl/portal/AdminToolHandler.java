@@ -8,6 +8,7 @@ import org.osgi.service.component.annotations.Reference;
 
 import com.enonic.xp.admin.tool.AdminToolDescriptorService;
 import com.enonic.xp.app.ApplicationKey;
+import com.enonic.xp.context.ContextAccessor;
 import com.enonic.xp.page.DescriptorKey;
 import com.enonic.xp.portal.PortalRequest;
 import com.enonic.xp.portal.PortalResponse;
@@ -31,7 +32,7 @@ public final class AdminToolHandler
 
     private final static Pattern PATTERN = Pattern.compile( "([^/]+)/([^/]+)" );
 
-        private final static DescriptorKey DEFAULT_DESCRIPTOR_KEY = DescriptorKey.from( "com.enonic.xp.app.main:home" );
+    private final static DescriptorKey DEFAULT_DESCRIPTOR_KEY = DescriptorKey.from( "com.enonic.xp.app.main:home" );
 
     private AdminToolDescriptorService adminToolDescriptorService;
 
@@ -80,14 +81,19 @@ public final class AdminToolHandler
         worker.descriptorKey = descriptorKey;
 
         final Trace trace = Tracer.newTrace( "portalRequest" );
-        if ( trace != null )
+        if ( trace == null )
         {
-            trace.put( "path", webRequest.getPath() );
-            trace.put( "method", webRequest.getMethod().toString() );
-            trace.put( "host", webRequest.getHost() );
+            return worker.execute();
         }
-        return Tracer.traceEx( trace, () ->
-        {
+
+        trace.put( "path", webRequest.getPath() );
+        trace.put( "method", webRequest.getMethod().toString() );
+        trace.put( "host", webRequest.getHost() );
+        trace.put( "httpRequest", webRequest );
+        trace.put( "httpResponse", webResponse );
+        trace.put( "context", ContextAccessor.current() );
+
+        return Tracer.traceEx( trace, () -> {
             final PortalResponse response = worker.execute();
             addTraceInfo( trace, response );
             return response;

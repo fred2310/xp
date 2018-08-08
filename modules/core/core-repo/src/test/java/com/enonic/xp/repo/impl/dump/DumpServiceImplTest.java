@@ -28,6 +28,7 @@ import com.enonic.xp.dump.RepoLoadResult;
 import com.enonic.xp.dump.SystemDumpListener;
 import com.enonic.xp.dump.SystemDumpParams;
 import com.enonic.xp.dump.SystemDumpResult;
+import com.enonic.xp.dump.SystemLoadListener;
 import com.enonic.xp.dump.SystemLoadParams;
 import com.enonic.xp.dump.SystemLoadResult;
 import com.enonic.xp.dump.VersionsLoadResult;
@@ -160,6 +161,28 @@ public class DumpServiceImplTest
         assertEquals( node.getNodeState(), currentStoredNode.getNodeState() );
         assertEquals( node.getNodeType(), currentStoredNode.getNodeType() );
         assertEquals( node.data(), currentStoredNode.data() );
+    }
+
+    @Test
+    public void dump_long_filename()
+        throws Exception
+    {
+        final String nodeName = "this-is-my-node-with-very-long-filename-more-than-100-characters-yes-it-has-to-be-very-long-indeed-sir";
+        final Node node = createNode( NodePath.ROOT, nodeName );
+
+        final SystemDumpResult systemDumpResult = NodeHelper.runAsAdmin( () -> this.dumpService.dump( SystemDumpParams.create().
+            dumpName( "testDump" ).
+            build() ) );
+
+        final BranchDumpResult result = systemDumpResult.get( CTX_DEFAULT.getRepositoryId() ).get( CTX_DEFAULT.getBranch() );
+        assertNotNull( result );
+        assertEquals( new Long( 2 ), result.getSuccessful() );
+
+        NodeHelper.runAsAdmin( () -> dumpDeleteAndLoad( true ) );
+
+        final Node storedNode = this.nodeService.getById( node.id() );
+        assertNotNull( storedNode );
+        assertEquals( nodeName, storedNode.name().toString() );
     }
 
     @Test
@@ -546,22 +569,58 @@ public class DumpServiceImplTest
     }
 
     @Test
-    public void dumpListener()
+    public void dumpAndLoadListener()
     {
-        final TestDumpListener listener = new TestDumpListener();
-
         createNode( NodePath.ROOT, "myNode" );
 
+        final SystemDumpListener systemDumpListener = Mockito.mock( SystemDumpListener.class );
         NodeHelper.runAsAdmin( () -> this.dumpService.dump( SystemDumpParams.create().
             dumpName( "myTestDump" ).
             includeVersions( true ).
             includeBinaries( true ).
-            listener( listener ).
+            listener( systemDumpListener ).
             build() ) );
 
-        assertEquals( 7, listener.getNodesDumped() );
-        assertNotNull( listener.dumpedBranches.get( CTX_DEFAULT.getRepositoryId() ) );
-        assertNotNull( listener.dumpedBranches.get( SystemConstants.SYSTEM_REPO.getId() ) );
+        Mockito.verify( systemDumpListener ).dumpingBranch( CTX_DEFAULT.getRepositoryId(), CTX_DEFAULT.getBranch(), 2 );
+        Mockito.verify( systemDumpListener ).dumpingBranch( CTX_OTHER.getRepositoryId(), CTX_OTHER.getBranch(), 1 );
+        Mockito.verify( systemDumpListener ).dumpingBranch( SystemConstants.SYSTEM_REPO.getId(), SystemConstants.BRANCH_SYSTEM, 4 );
+        Mockito.verify( systemDumpListener, Mockito.times( 7 ) ).nodeDumped();
+
+        final SystemLoadListener systemLoadListener = Mockito.mock( SystemLoadListener.class );
+        NodeHelper.runAsAdmin( () -> this.dumpService.load( SystemLoadParams.create().
+            dumpName( "myTestDump" ).
+            includeVersions( true ).
+            listener( systemLoadListener ).
+            build() ) );
+
+        Mockito.verify( systemLoadListener ).loadingBranch( CTX_DEFAULT.getRepositoryId(), CTX_DEFAULT.getBranch(), 2L );
+        Mockito.verify( systemLoadListener ).loadingBranch( CTX_OTHER.getRepositoryId(), CTX_OTHER.getBranch(), 1L );
+        Mockito.verify( systemLoadListener ).loadingVersions( CTX_OTHER.getRepositoryId() );
+        Mockito.verify( systemLoadListener ).loadingBranch( SystemConstants.SYSTEM_REPO.getId(), SystemConstants.BRANCH_SYSTEM, 4L );
+        Mockito.verify( systemLoadListener ).loadingVersions( SystemConstants.SYSTEM_REPO.getId() );
+        Mockito.verify( systemLoadListener, Mockito.times( 2 + 1 + 2 + 4 + 4 ) ).entryLoaded();
+    }
+
+    @Test
+    public void skip_versions()
+        throws Exception
+    {
+        final Node node = createNode( NodePath.ROOT, "myNode" );
+        final Node updatedNode = updateNode( node );
+        final Node currentNode = updateNode( updatedNode );
+        refresh();
+
+        NodeHelper.runAsAdmin( () -> dumpDeleteAndLoad( true, false ) );
+
+        refresh();
+
+        final NodeVersionQueryResult versionsAfterLoad = this.nodeService.findVersions( GetNodeVersionsParams.create().
+            nodeId( node.id() ).
+            build() );
+        assertEquals( 1, versionsAfterLoad.getTotalHits() );
+
+        final Node currentStoredNode = this.nodeService.getById( node.id() );
+        assertEquals( currentNode.data(), currentStoredNode.data() );
     }
 
     private void verifyBinaries( final Node node, final Node updatedNode, final NodeVersionQueryResult versions )
@@ -588,9 +647,14 @@ public class DumpServiceImplTest
 
     private SystemLoadResult dumpDeleteAndLoad( final boolean clearBlobStore )
     {
+        return dumpDeleteAndLoad( clearBlobStore, true );
+    }
+
+    private SystemLoadResult dumpDeleteAndLoad( final boolean clearBlobStore, final boolean includeVersions )
+    {
         final SystemDumpParams params = SystemDumpParams.create().
             dumpName( "myTestDump" ).
-            includeVersions( true ).
+            includeVersions( includeVersions ).
             includeBinaries( true ).
             build();
 
@@ -619,7 +683,12 @@ public class DumpServiceImplTest
         this.indexServiceInternal.deleteIndices( IndexNameResolver.resolveSearchIndexName( SystemConstants.SYSTEM_REPO.getId() ) );
         this.indexServiceInternal.deleteIndices( IndexNameResolver.resolveStorageIndexName( SystemConstants.SYSTEM_REPO.getId() ) );
 
-        new SystemRepoInitializer( this.repositoryService, this.storageService ).initialize();
+        SystemRepoInitializer.create().
+            setIndexServiceInternal( indexServiceInternal ).
+            setRepositoryService( repositoryService ).
+            setNodeStorageService( storageService ).
+            build().
+            initialize();
 
         final SystemLoadResult result = doLoad();
 

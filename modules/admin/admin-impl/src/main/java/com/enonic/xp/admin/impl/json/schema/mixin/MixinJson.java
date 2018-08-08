@@ -1,15 +1,17 @@
 package com.enonic.xp.admin.impl.json.schema.mixin;
 
 import java.time.Instant;
+import java.util.Collections;
 import java.util.List;
 
-import com.google.common.collect.ImmutableList;
+import org.apache.commons.lang.StringUtils;
+
+import com.google.common.base.Preconditions;
 
 import com.enonic.xp.admin.impl.json.ItemJson;
-import com.enonic.xp.admin.impl.json.form.FormItemJson;
-import com.enonic.xp.admin.impl.json.form.FormItemJsonFactory;
+import com.enonic.xp.admin.impl.json.form.FormJson;
+import com.enonic.xp.admin.impl.rest.resource.schema.content.LocaleMessageResolver;
 import com.enonic.xp.admin.impl.rest.resource.schema.mixin.MixinIconUrlResolver;
-import com.enonic.xp.form.FormItem;
 import com.enonic.xp.schema.mixin.Mixin;
 
 public class MixinJson
@@ -17,12 +19,25 @@ public class MixinJson
 {
     private final Mixin mixin;
 
+    private final Boolean isExternal;
+
     private final String iconUrl;
 
-    public MixinJson( final Mixin mixin, final MixinIconUrlResolver iconUrlResolver )
+    private final LocaleMessageResolver localeMessageResolver;
+
+    public MixinJson( final Builder builder )
     {
-        this.mixin = mixin;
-        this.iconUrl = iconUrlResolver.resolve( mixin );
+        Preconditions.checkNotNull( builder.localeMessageResolver );
+
+        this.mixin = builder.mixin;
+        this.isExternal = builder.isExternal;
+        this.iconUrl = builder.iconUrlResolver.resolve( mixin );
+        this.localeMessageResolver = builder.localeMessageResolver;
+    }
+
+    public static Builder create()
+    {
+        return new Builder();
     }
 
     public String getName()
@@ -32,12 +47,26 @@ public class MixinJson
 
     public String getDisplayName()
     {
-        return mixin.getDisplayName();
+        if ( StringUtils.isNotBlank( mixin.getDisplayNameI18nKey() ) )
+        {
+            return localeMessageResolver.localizeMessage( mixin.getDisplayNameI18nKey(), mixin.getDisplayName() );
+        }
+        else
+        {
+            return mixin.getDisplayName();
+        }
     }
 
     public String getDescription()
     {
-        return mixin.getDescription();
+        if ( StringUtils.isNotBlank( mixin.getDescriptionI18nKey() ) )
+        {
+            return localeMessageResolver.localizeMessage( mixin.getDescriptionI18nKey(), mixin.getDescription() );
+        }
+        else
+        {
+            return mixin.getDescription();
+        }
     }
 
     public Instant getCreatedTime()
@@ -55,15 +84,9 @@ public class MixinJson
         return iconUrl;
     }
 
-    public List<FormItemJson> getItems()
+    public FormJson getForm()
     {
-        final ImmutableList.Builder<FormItemJson> builder = ImmutableList.builder();
-        for ( final FormItem formItem : mixin.getForm() )
-        {
-            builder.add( FormItemJsonFactory.create( formItem ) );
-        }
-        
-        return builder.build();
+        return new FormJson( mixin.getForm(), this.localeMessageResolver );
     }
 
     public String getCreator()
@@ -74,6 +97,16 @@ public class MixinJson
     public String getModifier()
     {
         return mixin.getModifier() != null ? mixin.getModifier().toString() : null;
+    }
+
+    public List<String> getAllowedContentTypes()
+    {
+        return Collections.emptyList();
+    }
+
+    public Boolean getExternal()
+    {
+        return isExternal;
     }
 
     @Override
@@ -87,4 +120,56 @@ public class MixinJson
     {
         return false;
     }
+
+    public static final class Builder
+    {
+        private Mixin mixin;
+
+        private Boolean isExternal = false;
+
+        private MixinIconUrlResolver iconUrlResolver;
+
+        private LocaleMessageResolver localeMessageResolver;
+
+        private Builder()
+        {
+        }
+
+        public Builder setMixin( final Mixin mixin )
+        {
+            this.mixin = mixin;
+            return this;
+        }
+
+        public Builder setExternal( final Boolean external )
+        {
+            isExternal = external;
+            return this;
+        }
+
+        public Builder setIconUrlResolver( final MixinIconUrlResolver iconUrlResolver )
+        {
+            this.iconUrlResolver = iconUrlResolver;
+            return this;
+        }
+
+        public Builder setLocaleMessageResolver( final LocaleMessageResolver localeMessageResolver )
+        {
+            this.localeMessageResolver = localeMessageResolver;
+            return this;
+        }
+
+        private void validate()
+        {
+            Preconditions.checkNotNull( localeMessageResolver );
+            Preconditions.checkNotNull( iconUrlResolver );
+        }
+
+        public MixinJson build()
+        {
+            validate();
+            return new MixinJson( this );
+        }
+    }
+
 }

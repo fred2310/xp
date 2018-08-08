@@ -6,6 +6,8 @@ import java.util.concurrent.ConcurrentMap;
 
 import org.osgi.framework.Bundle;
 import org.osgi.framework.BundleContext;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
@@ -18,20 +20,26 @@ import com.enonic.xp.server.RunMode;
 
 final class ApplicationRegistry
 {
+    private final static Logger LOG = LoggerFactory.getLogger( ApplicationRegistry.class );
+
     private final ConcurrentMap<ApplicationKey, Application> applications;
 
-    private final BundleContext context;
+    private BundleContext context;
 
     private final ApplicationFactory factory;
 
     private final List<ApplicationInvalidator> invalidators;
 
-    public ApplicationRegistry( final BundleContext context )
+    public ApplicationRegistry()
     {
-        this.context = context;
         this.applications = Maps.newConcurrentMap();
         this.factory = new ApplicationFactory( RunMode.get() );
         this.invalidators = Lists.newCopyOnWriteArrayList();
+    }
+
+    public void activate( final BundleContext context )
+    {
+        this.context = context;
     }
 
     public ApplicationKeys getKeys()
@@ -59,7 +67,14 @@ final class ApplicationRegistry
 
         for ( final ApplicationInvalidator invalidator : this.invalidators )
         {
-            invalidator.invalidate( key );
+            try
+            {
+                invalidator.invalidate( key );
+            }
+            catch ( Exception e )
+            {
+                LOG.error( "Error invalidating application [" + invalidator.getClass().getSimpleName() + "]", e );
+            }
         }
     }
 

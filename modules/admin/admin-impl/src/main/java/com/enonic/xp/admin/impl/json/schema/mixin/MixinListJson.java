@@ -1,32 +1,43 @@
 package com.enonic.xp.admin.impl.json.schema.mixin;
 
+import java.util.ArrayList;
 import java.util.List;
+import java.util.stream.Collectors;
 
-import com.google.common.collect.ImmutableList;
-
+import com.enonic.xp.admin.impl.rest.resource.schema.content.LocaleMessageResolver;
 import com.enonic.xp.admin.impl.rest.resource.schema.mixin.MixinIconUrlResolver;
-import com.enonic.xp.schema.mixin.Mixin;
 import com.enonic.xp.schema.mixin.Mixins;
 
 public class MixinListJson
 {
-    private final MixinIconUrlResolver iconUrlResolver;
+    private final List<MixinJson> list;
 
-    private final Mixins mixins;
-
-    public MixinListJson( final Mixins mixins, final MixinIconUrlResolver iconUrlResolver )
+    public MixinListJson()
     {
-        this.mixins = mixins;
-        this.iconUrlResolver = iconUrlResolver;
+        this.list = new ArrayList<MixinJson>();
+    }
+
+
+    public MixinListJson( final List<MixinJson> list )
+    {
+        this.list = new ArrayList<MixinJson>( list );
+    }
+
+    public MixinListJson( final Mixins mixins, final MixinIconUrlResolver iconUrlResolver,
+                          final LocaleMessageResolver localeMessageResolver )
+    {
+        this.list = mixins.stream().map(
+            mixin -> MixinJson.create().setMixin( mixin ).setIconUrlResolver( iconUrlResolver ).setLocaleMessageResolver(
+                localeMessageResolver ).build() ).collect( Collectors.toList() );
+    }
+
+    public void addMixins( final List<MixinJson> mixins )
+    {
+        this.list.addAll( mixins );
     }
 
     public List<MixinJson> getMixins()
     {
-        final ImmutableList.Builder<MixinJson> builder = ImmutableList.builder();
-        for ( Mixin mixin : mixins )
-        {
-            builder.add( new MixinJson( mixin, iconUrlResolver ) );
-        }
-        return builder.build();
+        return this.list;
     }
 }

@@ -57,12 +57,16 @@ import com.enonic.xp.form.Input;
 import com.enonic.xp.inputtype.InputTypeName;
 import com.enonic.xp.inputtype.InputTypeProperty;
 import com.enonic.xp.internal.blobstore.MemoryBlobStore;
+import com.enonic.xp.page.PageDescriptorService;
+import com.enonic.xp.region.LayoutDescriptorService;
+import com.enonic.xp.region.PartDescriptorService;
 import com.enonic.xp.repo.impl.binary.BinaryServiceImpl;
 import com.enonic.xp.repo.impl.branch.storage.BranchServiceImpl;
 import com.enonic.xp.repo.impl.elasticsearch.AbstractElasticsearchIntegrationTest;
 import com.enonic.xp.repo.impl.elasticsearch.IndexServiceInternalImpl;
 import com.enonic.xp.repo.impl.elasticsearch.search.SearchDaoImpl;
 import com.enonic.xp.repo.impl.elasticsearch.storage.StorageDaoImpl;
+import com.enonic.xp.repo.impl.index.IndexServiceImpl;
 import com.enonic.xp.repo.impl.node.NodeServiceImpl;
 import com.enonic.xp.repo.impl.node.dao.NodeVersionServiceImpl;
 import com.enonic.xp.repo.impl.repository.NodeRepositoryServiceImpl;
@@ -150,8 +154,10 @@ public class AbstractContentServiceTest
     private VersionServiceImpl versionService;
 
     private BranchServiceImpl branchService;
+    
+    private IndexServiceInternalImpl indexServiceInternal;
 
-    private IndexServiceInternalImpl indexService;
+    private IndexServiceImpl indexService;
 
     private NodeStorageServiceImpl storageService;
 
@@ -160,6 +166,12 @@ public class AbstractContentServiceTest
     private IndexDataServiceImpl indexedDataService;
 
     private RepositoryServiceImpl repositoryService;
+
+    private PageDescriptorService pageDescriptorService;
+
+    private PartDescriptorService partDescriptorService;
+
+    private LayoutDescriptorService layoutDescriptorService;
 
     private SearchDaoImpl searchDao;
 
@@ -191,8 +203,11 @@ public class AbstractContentServiceTest
         this.versionService = new VersionServiceImpl();
         this.versionService.setStorageDao( storageDao );
 
-        this.indexService = new IndexServiceInternalImpl();
-        this.indexService.setClient( client );
+        this.indexServiceInternal = new IndexServiceInternalImpl();
+        this.indexServiceInternal.setClient( client );
+
+        this.indexService = new IndexServiceImpl();
+        this.indexService.setIndexServiceInternal( this.indexServiceInternal );
 
         this.nodeDao = new NodeVersionServiceImpl();
         this.nodeDao.setBlobStore( blobStore );
@@ -212,7 +227,7 @@ public class AbstractContentServiceTest
         this.searchService.setSearchDao( this.searchDao );
 
         final NodeRepositoryServiceImpl nodeRepositoryService = new NodeRepositoryServiceImpl();
-        nodeRepositoryService.setIndexServiceInternal( this.indexService );
+        nodeRepositoryService.setIndexServiceInternal( this.indexServiceInternal );
 
         final RepositoryEntryServiceImpl repositoryEntryService = new RepositoryEntryServiceImpl();
         repositoryEntryService.setIndexServiceInternal( elasticsearchIndexService );
@@ -231,7 +246,7 @@ public class AbstractContentServiceTest
         this.repositoryService.initialize();
 
         this.nodeService = new NodeServiceImpl();
-        this.nodeService.setIndexServiceInternal( indexService );
+        this.nodeService.setIndexServiceInternal( indexServiceInternal );
         this.nodeService.setNodeStorageService( storageService );
         this.nodeService.setNodeSearchService( searchService );
         this.nodeService.setEventPublisher( eventPublisher );
@@ -267,6 +282,10 @@ public class AbstractContentServiceTest
         this.translator = new ContentNodeTranslatorImpl();
         this.translator.setNodeService( this.nodeService );
 
+        this.pageDescriptorService = Mockito.mock( PageDescriptorService.class );
+        this.partDescriptorService = Mockito.mock( PartDescriptorService.class );
+        this.layoutDescriptorService = Mockito.mock( LayoutDescriptorService.class );
+
         this.contentService.setNodeService( this.nodeService );
         this.contentService.setEventPublisher( eventPublisher );
         this.contentService.setMediaInfoService( mediaInfoService );
@@ -274,8 +293,12 @@ public class AbstractContentServiceTest
         this.contentService.setContentTypeService( contentTypeService );
         this.contentService.setMixinService( mixinService );
         this.contentService.setTranslator( this.translator );
+        this.contentService.setPageDescriptorService( this.pageDescriptorService );
+        this.contentService.setPartDescriptorService( this.partDescriptorService );
+        this.contentService.setLayoutDescriptorService( this.layoutDescriptorService );
         this.contentService.setFormDefaultValuesProcessor( ( form, data ) -> {
         } );
+
 
         initializeRepository();
     }
@@ -283,7 +306,12 @@ public class AbstractContentServiceTest
 
     private void initializeRepository()
     {
-        new ContentInitializer( this.nodeService, this.repositoryService ).initialize();
+        ContentInitializer.create().
+            setIndexService( indexService ).
+            setNodeService( nodeService ).
+            setRepositoryService( repositoryService ).
+            build().
+            initialize();
         waitForClusterHealth();
     }
 
@@ -571,7 +599,7 @@ public class AbstractContentServiceTest
 
             if ( lastModified != null )
             {
-                assertTrue( next.getModified().isBefore( lastModified ) );
+                assertFalse( next.getModified().isAfter( lastModified ) );
             }
 
             lastModified = next.getModified();

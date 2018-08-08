@@ -8,8 +8,6 @@ import java.util.Set;
 import java.util.stream.Collectors;
 
 import org.apache.commons.lang.StringUtils;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 import com.google.common.collect.Maps;
 
@@ -21,8 +19,6 @@ final class MessageBundleImpl
     private static final String UTF_8_ENCODING = "UTF-8";
 
     private static final String LATIN_1_ENCODING = "ISO-8859-1";
-
-    static final String MISSING_VALUE_MESSAGE = "NOT_TRANSLATED";
 
     private final Properties properties;
 
@@ -41,7 +37,7 @@ final class MessageBundleImpl
     public String localize( final String key, final Object... args )
     {
         final String message = (String) handleGetObject( key );
-        return StringUtils.isNotEmpty( message ) ? format( message, args ) : MISSING_VALUE_MESSAGE;
+        return StringUtils.isNotEmpty( message ) ? format( message, args ) : null;
     }
 
     private String format( final String message, final Object[] args )

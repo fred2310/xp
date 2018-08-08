@@ -41,7 +41,7 @@ public final class PageHandler
     @Override
     public boolean canHandle( final WebRequest webRequest )
     {
-        return webRequest instanceof PortalRequest;
+        return webRequest instanceof PortalRequest && ( (PortalRequest) webRequest ).isPortalBase();
     }
 
     @Override
@@ -57,6 +57,10 @@ public final class PageHandler
         worker.pageTemplateService = pageTemplateService;
         worker.portalUrlService = portalUrlService;
         final Trace trace = Tracer.newTrace( "renderComponent" );
+        if ( trace == null )
+        {
+            return worker.execute();
+        }
         return Tracer.traceEx( trace, worker::execute );
     }
 

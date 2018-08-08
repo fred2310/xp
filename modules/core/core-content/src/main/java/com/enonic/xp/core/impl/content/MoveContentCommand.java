@@ -4,39 +4,44 @@ import com.google.common.base.Preconditions;
 
 import com.enonic.xp.content.Content;
 import com.enonic.xp.content.ContentAccessException;
+import com.enonic.xp.content.ContentAlreadyExistsException;
 import com.enonic.xp.content.ContentAlreadyMovedException;
 import com.enonic.xp.content.ContentConstants;
-import com.enonic.xp.content.ContentNotFoundException;
+import com.enonic.xp.content.ContentId;
 import com.enonic.xp.content.ContentPath;
 import com.enonic.xp.content.ContentService;
-import com.enonic.xp.content.ExtraDatas;
 import com.enonic.xp.content.MoveContentException;
+import com.enonic.xp.content.MoveContentListener;
 import com.enonic.xp.content.MoveContentParams;
-import com.enonic.xp.content.UpdateContentParams;
+import com.enonic.xp.content.MoveContentsResult;
 import com.enonic.xp.node.MoveNodeException;
+import com.enonic.xp.node.MoveNodeListener;
 import com.enonic.xp.node.Node;
 import com.enonic.xp.node.NodeAccessException;
 import com.enonic.xp.node.NodeAlreadyExistAtPathException;
 import com.enonic.xp.node.NodeAlreadyMovedException;
 import com.enonic.xp.node.NodeId;
-import com.enonic.xp.node.NodeNotFoundException;
 import com.enonic.xp.node.NodePath;
+import com.enonic.xp.node.RefreshMode;
 import com.enonic.xp.schema.content.ContentType;
 import com.enonic.xp.schema.content.GetContentTypeParams;
-import com.enonic.xp.site.Site;
 
 final class MoveContentCommand
     extends AbstractContentCommand
+    implements MoveNodeListener
 {
     private final MoveContentParams params;
 
     private final ContentService contentService;
+
+    private final MoveContentListener moveContentListener;
 
     private MoveContentCommand( final Builder builder )
     {
         super( builder );
         this.params = builder.params;
         this.contentService = builder.contentService;
+        this.moveContentListener = builder.moveContentListener;
     }
 
     public static Builder create( final MoveContentParams params )
@@ -44,25 +49,27 @@ final class MoveContentCommand
         return new Builder( params );
     }
 
-    Content execute()
+    MoveContentsResult execute()
     {
         params.validate();
 
         try
         {
-            return doExecute();
+            final MoveContentsResult movedContents = doExecute();
+            this.nodeService.refresh( RefreshMode.ALL );
+            return movedContents;
         }
         catch ( NodeAlreadyMovedException e )
         {
-            throw new ContentAlreadyMovedException( e.getMessage() );
+            throw new ContentAlreadyMovedException( e.getMessage(), ContentPath.from( e.getPath().toString() ) );
         }
         catch ( MoveNodeException e )
         {
-            throw new MoveContentException( e.getMessage() );
+            throw new MoveContentException( e.getMessage(), ContentPath.from( e.getPath().toString() ) );
         }
         catch ( NodeAlreadyExistAtPathException e )
         {
-            throw new MoveContentException( "Content already exists at path: " + e.getNode().toString() );
+            throw new ContentAlreadyExistsException( ContentPath.from( e.getNode().toString() ) );
         }
         catch ( NodeAccessException e )
         {
@@ -70,18 +77,16 @@ final class MoveContentCommand
         }
     }
 
-    private Content doExecute()
+    private MoveContentsResult doExecute()
     {
         this.verifyIntegrity( params.getParentContentPath() );
 
-        final NodeId sourceNodeId = NodeId.from( params.getContentId().toString() );
+        final NodeId sourceNodeId = NodeId.from( params.getContentId() );
         final Node sourceNode = nodeService.getById( sourceNodeId );
         if ( sourceNode == null )
         {
             throw new IllegalArgumentException( String.format( "Content with id [%s] not found", params.getContentId() ) );
         }
-
-        final Site nearestSite = contentService.getNearestSite( params.getContentId() );
 
         final NodePath nodePath = NodePath.create( ContentConstants.CONTENT_ROOT_PATH ).
             elements( params.getParentContentPath().toString() ).
@@ -90,29 +95,23 @@ final class MoveContentCommand
         if ( sourceNode.parentPath().equals( nodePath ) )
         {
             throw new NodeAlreadyMovedException(
-                String.format( "Content with id [%s] is already a child of [%s]", params.getContentId(), params.getParentContentPath() ) );
+                String.format( "Content with id [%s] is already a child of [%s]", params.getContentId(), params.getParentContentPath() ),
+                sourceNode.path() );
         }
 
-        final ContentPath newParentPath = ContentNodeHelper.translateNodePathToContentPath( nodePath );
-
-        final boolean isOutOfSite =
-            nearestSite != null && ( !newParentPath.isChildOf( nearestSite.getPath() ) || !newParentPath.equals( nearestSite.getPath() ) );
-
-        checkRestrictedMoves( sourceNode, isOutOfSite );
-
-        final Node movedNode = nodeService.move( sourceNodeId, nodePath );
+        final Node movedNode = nodeService.move( sourceNodeId, nodePath, this );
 
         final Content movedContent = translator.fromNode( movedNode, true );
 
-        if ( isOutOfSite )
-        {
-            final UpdateContentParams updateParams = new UpdateContentParams().
-                contentId( params.getContentId() ).
-                modifier( params.getCreator() ).
-                editor( edit -> edit.extraDatas = this.updateExtraData( nearestSite, movedContent ) );
-            return contentService.update( updateParams );
-        }
-        return movedContent;
+        String contentName = movedContent.getDisplayName();
+        ContentId contentId = movedContent.getId();
+
+        final MoveContentsResult result = MoveContentsResult.create().
+            setContentName( contentName ).
+            addMoved( contentId ).
+            build();
+
+        return result;
     }
 
     private void verifyIntegrity( ContentPath destinationPath )
@@ -135,21 +134,13 @@ final class MoveContentCommand
         }
     }
 
-    private void checkRestrictedMoves( final Node existingNode, final Boolean isOutOfSite )
+    @Override
+    public void nodesMoved( final int count )
     {
-        if ( translator.fromNode( existingNode, false ).getType().isFragment() )
+        if ( moveContentListener != null )
         {
-            if ( isOutOfSite )
-            {
-                throw new MoveContentException( "A Fragment is not allowed to be moved out of its site." );
-            }
+            moveContentListener.contentMoved( count );
         }
-    }
-
-    private ExtraDatas updateExtraData( Site site, Content content )
-    {
-        return ExtraDatas.from( content.getAllExtraData().stream().filter(
-            extraData -> site.getSiteConfigs().get( extraData.getName().getApplicationKey() ) == null ) );
     }
 
     public static class Builder
@@ -159,6 +150,8 @@ final class MoveContentCommand
 
         private ContentService contentService;
 
+        private MoveContentListener moveContentListener;
+
         public Builder( final MoveContentParams params )
         {
             this.params = params;
@@ -167,6 +160,12 @@ final class MoveContentCommand
         public MoveContentCommand.Builder contentService( ContentService contentService )
         {
             this.contentService = contentService;
+            return this;
+        }
+
+        public Builder moveListener( final MoveContentListener moveContentListener )
+        {
+            this.moveContentListener = moveContentListener;
             return this;
         }
 

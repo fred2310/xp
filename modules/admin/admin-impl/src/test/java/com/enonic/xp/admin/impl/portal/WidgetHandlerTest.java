@@ -27,6 +27,7 @@ import com.enonic.xp.region.PartComponent;
 import com.enonic.xp.region.Region;
 import com.enonic.xp.schema.content.ContentTypeName;
 import com.enonic.xp.security.PrincipalKey;
+import com.enonic.xp.security.PrincipalKeys;
 import com.enonic.xp.site.Site;
 import com.enonic.xp.web.HttpMethod;
 import com.enonic.xp.web.HttpStatus;
@@ -107,7 +108,12 @@ public class WidgetHandlerTest
     public void testOptions()
         throws Exception
     {
+        mockDescriptor( true );
+        final PortalResponse portalResponse = PortalResponse.create().status( HttpStatus.METHOD_NOT_ALLOWED ).build();
+        Mockito.when( this.controllerScript.execute( Mockito.anyObject() ) ).thenReturn( portalResponse );
+
         this.request.setMethod( HttpMethod.OPTIONS );
+        this.request.setMode( RenderMode.ADMIN );
 
         final WebResponse response = this.handler.handle( this.request, WebResponse.create().build(), null );
         assertNotNull( response );
@@ -290,8 +296,7 @@ public class WidgetHandlerTest
     private void mockDescriptor( boolean hasAccess )
     {
         WidgetDescriptor descriptor = Mockito.mock( WidgetDescriptor.class );
-        Mockito.when( this.widgetDescriptorService.getByKey( Mockito.any( DescriptorKey.class ) ) ).thenReturn(
-            hasAccess ? descriptor : null );
-        Mockito.when( this.widgetDescriptorService.widgetExists( Mockito.any( DescriptorKey.class ) ) ).thenReturn( true );
+        Mockito.when( descriptor.isAccessAllowed( Mockito.any( PrincipalKeys.class ) ) ).thenReturn( hasAccess );
+        Mockito.when( this.widgetDescriptorService.getByKey( Mockito.any( DescriptorKey.class ) ) ).thenReturn( descriptor );
     }
 }

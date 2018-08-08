@@ -75,14 +75,19 @@ public class IdentityHandler
         worker.setContentService( this.contentService );
         worker.authControllerService = this.authControllerService;
         final Trace trace = Tracer.newTrace( "portalRequest" );
-        if ( trace != null )
+        if ( trace == null )
         {
-            trace.put( "path", webRequest.getPath() );
-            trace.put( "method", webRequest.getMethod().toString() );
-            trace.put( "host", webRequest.getHost() );
+            return worker.execute();
         }
-        return Tracer.traceEx( trace, () ->
-        {
+
+        trace.put( "path", webRequest.getPath() );
+        trace.put( "method", webRequest.getMethod().toString() );
+        trace.put( "host", webRequest.getHost() );
+        trace.put( "httpRequest", webRequest );
+        trace.put( "httpResponse", webResponse );
+        trace.put( "context", ContextAccessor.current() );
+
+        return Tracer.traceEx( trace, () -> {
             final PortalResponse response = worker.execute();
             addTraceInfo( trace, response );
             return response;

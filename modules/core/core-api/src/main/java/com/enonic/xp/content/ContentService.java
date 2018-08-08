@@ -6,6 +6,7 @@ import java.util.concurrent.Future;
 import com.google.common.annotations.Beta;
 import com.google.common.io.ByteSource;
 
+import com.enonic.xp.app.ApplicationKey;
 import com.enonic.xp.security.acl.AccessControlList;
 import com.enonic.xp.site.CreateSiteParams;
 import com.enonic.xp.site.Site;
@@ -49,9 +50,9 @@ public interface ContentService
 
     ContentIds getInvalidContent( ContentIds contentIds );
 
-    Content duplicate( DuplicateContentParams params );
+    DuplicateContentsResult duplicate( DuplicateContentParams params );
 
-    Content move( MoveContentParams params );
+    MoveContentsResult move( MoveContentParams params );
 
     Content setChildOrder( SetContentChildOrderParams params );
 
@@ -81,6 +82,11 @@ public interface ContentService
     FindContentByQueryResult find( FindContentByQueryParams params );
 
     FindContentIdsByQueryResult find( ContentQuery query );
+
+    Contents findByApplicationKey( ApplicationKey key);
+
+    @Deprecated
+    ContentPaths findContentPaths( ContentQuery query);
 
     CompareContentResult compare( CompareContentParams params );
 

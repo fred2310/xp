@@ -1,7 +1,9 @@
 package com.enonic.xp.impl.macro;
 
-import java.util.HashMap;
-import java.util.Map;
+import org.apache.commons.lang.StringEscapeUtils;
+
+import com.google.common.collect.ArrayListMultimap;
+import com.google.common.collect.Multimap;
 
 import com.enonic.xp.macro.Macro;
 
@@ -36,7 +38,7 @@ public final class MacroParser
 
     private String macroName;
 
-    private final Map<String, String> attributes = new HashMap<>();
+    private final Multimap<String, String> attributes = ArrayListMultimap.create();
 
     private String body;
 
@@ -76,9 +78,12 @@ public final class MacroParser
         }
 
         final Macro.Builder macro = Macro.create().name( macroName );
-        for ( Map.Entry<String, String> attribute : attributes.entrySet() )
+        for ( String attribute : attributes.keySet() )
         {
-            macro.param( attribute.getKey(), attribute.getValue() );
+            for ( String value : attributes.get( attribute ) )
+            {
+                macro.param( attribute, value );
+            }
         }
         return macro.body( body ).build();
     }
@@ -125,7 +130,7 @@ public final class MacroParser
         match( '=' );
         ws();
         match( '"' );
-        final String value = parseAttributeValue();
+        final String value = StringEscapeUtils.unescapeHtml( parseAttributeValue() );
         match( '"' );
         this.attributes.put( name, value );
     }
@@ -266,6 +271,10 @@ public final class MacroParser
                         {
                             throw new ParseException( "Name cannot start with underscore '" + c + "' at position " + p );
                         }
+                        if ( c == '-' )
+                        {
+                            throw new ParseException( "Name cannot start with a hyphen character '" + c + "' at position " + p );
+                        }
                         return Token.NAME;
                     }
                     throw new ParseException( "Invalid character '" + c + "' at position " + p );
@@ -317,7 +326,7 @@ public final class MacroParser
 
     private boolean isNameChar( final char c )
     {
-        return Character.isLetterOrDigit( c ) || c == '_';
+        return Character.isLetterOrDigit( c ) || c == '_' || c == '-';
     }
 
     MacroParser debugMode()

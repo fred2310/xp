@@ -1,5 +1,7 @@
 package com.enonic.xp.schema.mixin;
 
+import java.util.Objects;
+
 import com.google.common.annotations.Beta;
 
 import com.enonic.xp.form.Form;
@@ -31,6 +33,32 @@ public final class Mixin
     public static Builder create( final Mixin mixin )
     {
         return new Builder( mixin );
+    }
+
+    @Override
+    public boolean equals( final Object o )
+    {
+        if ( this == o )
+        {
+            return true;
+        }
+        if ( o == null || getClass() != o.getClass() )
+        {
+            return false;
+        }
+        if ( !super.equals( o ) )
+        {
+            return false;
+        }
+        final Mixin mixin = (Mixin) o;
+        return Objects.equals( form, mixin.form );
+    }
+
+    @Override
+    public int hashCode()
+    {
+
+        return Objects.hash( super.hashCode(), form );
     }
 
     public static class Builder

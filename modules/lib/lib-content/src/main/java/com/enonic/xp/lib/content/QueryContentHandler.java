@@ -4,6 +4,9 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
+import com.google.common.collect.Lists;
+
+import com.enonic.xp.content.ContentIds;
 import com.enonic.xp.content.ContentQuery;
 import com.enonic.xp.content.Contents;
 import com.enonic.xp.content.FindContentIdsByQueryResult;
@@ -20,7 +23,7 @@ import com.enonic.xp.query.parser.QueryParser;
 import com.enonic.xp.schema.content.ContentTypeNames;
 import com.enonic.xp.script.ScriptValue;
 
-@SuppressWarnings( "unused" )
+@SuppressWarnings("unused")
 public final class QueryContentHandler
     extends BaseContextHandler
 {
@@ -36,7 +39,7 @@ public final class QueryContentHandler
 
     private List<String> contentTypes;
 
-    private Map<String, Object> filters;
+    private List<Map<String, Object>> filters;
 
     @Override
     protected Object doExecute()
@@ -82,7 +85,16 @@ public final class QueryContentHandler
 
     private ContentsResultMapper convert( final FindContentIdsByQueryResult findQueryResult )
     {
-        final Contents contents = this.contentService.getByIds( new GetContentByIdsParams( findQueryResult.getContentIds() ) );
+        final ContentIds contentIds = findQueryResult.getContentIds();
+        final Contents contents;
+        if ( contentIds.isEmpty() )
+        {
+            contents = Contents.empty();
+        }
+        else
+        {
+            contents = this.contentService.getByIds( new GetContentByIdsParams( contentIds ) );
+        }
 
         return new ContentsResultMapper( contents, findQueryResult.getTotalHits(), findQueryResult.getAggregations() );
     }
@@ -117,8 +129,38 @@ public final class QueryContentHandler
         this.contentTypes = value != null ? value.getArray( String.class ) : null;
     }
 
-    public void setFilters( final ScriptValue value )
+    public void setFilters( final ScriptValue filters )
     {
-        this.filters = value != null ? value.getMap() : null;
+        this.filters = doSetFilters( filters );
     }
+
+    private List<Map<String, Object>> doSetFilters( final ScriptValue filters )
+    {
+        List<Map<String, Object>> filterList = Lists.newArrayList();
+
+        if ( filters == null )
+        {
+            return filterList;
+        }
+
+        if ( filters.isObject() )
+        {
+            filterList.add( filters.getMap() );
+        }
+        else if ( filters.isArray() )
+        {
+            filters.getArray().forEach( sv -> {
+
+                if ( !sv.isObject() )
+                {
+                    throw new IllegalArgumentException( "Array elements not of type objects" );
+                }
+
+                filterList.add( sv.getMap() );
+            } );
+        }
+
+        return filterList;
+    }
+
 }

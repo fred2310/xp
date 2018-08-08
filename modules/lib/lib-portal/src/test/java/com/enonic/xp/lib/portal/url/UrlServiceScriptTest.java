@@ -42,9 +42,27 @@ public class UrlServiceScriptTest
     }
 
     @Test
+    public void assertUrlTest_unknownProperty()
+    {
+        Assert.assertTrue( execute( "assetUrlTest_unknownProperty" ) );
+    }
+
+    @Test
+    public void assertUrlTest_invalidProperty()
+    {
+        Assert.assertTrue( execute( "assetUrlTest_invalidProperty" ) );
+    }
+
+    @Test
     public void attachmentUrlTest()
     {
         Assert.assertTrue( execute( "attachmentUrlTest" ) );
+    }
+
+    @Test
+    public void attachmentUrlTest_unknownProperty()
+    {
+        Assert.assertTrue( execute( "attachmentUrlTest_unknownProperty" ) );
     }
 
     @Test
@@ -54,9 +72,21 @@ public class UrlServiceScriptTest
     }
 
     @Test
+    public void componentUrlTest_unknownProperty()
+    {
+        Assert.assertTrue( execute( "componentUrlTest_unknownProperty" ) );
+    }
+
+    @Test
     public void imageUrlTest()
     {
         Assert.assertTrue( execute( "imageUrlTest" ) );
+    }
+
+    @Test
+    public void imageUrlTest_unknownProperty()
+    {
+        Assert.assertTrue( execute( "imageUrlTest_unknownProperty" ) );
     }
 
     @Test
@@ -66,15 +96,33 @@ public class UrlServiceScriptTest
     }
 
     @Test
+    public void pageUrlTest_unknownProperty()
+    {
+        Assert.assertTrue( execute( "pageUrlTest_unknownProperty" ) );
+    }
+
+    @Test
     public void serviceUrlTest()
     {
         Assert.assertTrue( execute( "serviceUrlTest" ) );
     }
 
     @Test
+    public void serviceUrlTest_unknownProperty()
+    {
+        Assert.assertTrue( execute( "serviceUrlTest_unknownProperty" ) );
+    }
+
+    @Test
     public void processHtmlTest()
     {
         Assert.assertTrue( execute( "processHtmlTest" ) );
+    }
+
+    @Test
+    public void processHtmlTest_unknownProperty()
+    {
+        Assert.assertTrue( execute( "processHtmlTest_unknownProperty" ) );
     }
 
     @Test

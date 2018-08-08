@@ -5,10 +5,13 @@ import java.util.concurrent.Callable;
 import java.util.function.Supplier;
 import java.util.stream.Collectors;
 
+import javax.servlet.http.HttpSession;
+
 import org.apache.commons.lang.StringUtils;
 
 import com.enonic.xp.context.Context;
 import com.enonic.xp.context.ContextBuilder;
+import com.enonic.xp.portal.PortalRequest;
 import com.enonic.xp.script.bean.BeanContext;
 import com.enonic.xp.script.bean.ScriptBean;
 import com.enonic.xp.security.RoleKeys;
@@ -36,9 +39,13 @@ public final class LoginHandler
 
     private String[] userStore;
 
+    private Integer sessionTimeout;
+
     private Supplier<SecurityService> securityService;
 
     private Supplier<Context> context;
+
+    private Supplier<PortalRequest> portalRequestSupplier;
 
     public void setUser( final String user )
     {
@@ -60,6 +67,11 @@ public final class LoginHandler
         this.userStore = userStore;
     }
 
+    public void setSessionTimeout( final Integer sessionTimeout )
+    {
+        this.sessionTimeout = sessionTimeout;
+    }
+
     public LoginResultMapper login()
     {
         AuthenticationInfo authInfo = noUserStoreSpecified() ? attemptLoginWithAllExistingUserStores() : attemptLogin();
@@ -70,6 +82,11 @@ public final class LoginHandler
             if ( session != null )
             {
                 session.setAttribute( authInfo );
+            }
+
+            if ( this.sessionTimeout != null )
+            {
+                setSessionTimeout();
             }
 
             return new LoginResultMapper( authInfo );
@@ -188,10 +205,24 @@ public final class LoginHandler
         return StringUtils.countMatches( value, "@" ) == 1;
     }
 
+    private void setSessionTimeout()
+    {
+        final PortalRequest portalRequest = this.portalRequestSupplier.get();
+        if ( portalRequest != null )
+        {
+            final HttpSession httpSession = portalRequest.getRawRequest().getSession();
+            if ( httpSession != null )
+            {
+                httpSession.setMaxInactiveInterval( this.sessionTimeout );
+            }
+        }
+    }
+
     @Override
     public void initialize( final BeanContext context )
     {
         this.securityService = context.getService( SecurityService.class );
         this.context = context.getBinding( Context.class );
+        this.portalRequestSupplier = context.getBinding( PortalRequest.class );
     }
 }

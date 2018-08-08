@@ -12,13 +12,16 @@ import com.enonic.xp.app.ApplicationKey;
 import com.enonic.xp.portal.PortalRequest;
 import com.enonic.xp.portal.PortalRequestAccessor;
 import com.enonic.xp.portal.PortalResponse;
-import com.enonic.xp.portal.RenderMode;
 import com.enonic.xp.portal.controller.ControllerScript;
 import com.enonic.xp.portal.controller.ControllerScriptFactory;
+import com.enonic.xp.portal.impl.websocket.WebSocketEndpointImpl;
 import com.enonic.xp.resource.Resource;
 import com.enonic.xp.resource.ResourceKey;
 import com.enonic.xp.resource.ResourceService;
+import com.enonic.xp.trace.Trace;
+import com.enonic.xp.trace.Tracer;
 import com.enonic.xp.util.MediaTypes;
+import com.enonic.xp.web.HttpMethod;
 import com.enonic.xp.web.WebException;
 import com.enonic.xp.web.WebRequest;
 import com.enonic.xp.web.WebResponse;
@@ -35,7 +38,7 @@ import com.enonic.xp.web.websocket.WebSocketEndpoint;
 public final class AppHandler
     extends BaseWebHandler
 {
-    private final static Pattern PATTERN = Pattern.compile( "/app/([^/]+)(.+)?" );
+    public final static Pattern PATTERN = Pattern.compile( "/app/([^/]+)(/(?:.)*)?" );
 
     private final static String ROOT_ASSET_PREFIX = "assets/";
 
@@ -59,30 +62,43 @@ public final class AppHandler
     }
 
     @Override
-    protected WebResponse doHandle( final WebRequest req, final WebResponse res, final WebHandlerChain chain )
+    protected WebResponse doHandle( final WebRequest webRequest, final WebResponse res, final WebHandlerChain chain )
         throws Exception
     {
-        final Matcher matcher = PATTERN.matcher( req.getRawPath() );
-        if ( !matcher.matches() )
-        {
-            return chain.handle( req, res );
-        }
+        PortalRequest portalRequest = (PortalRequest) webRequest;
+        final Matcher matcher = PATTERN.matcher( portalRequest.getRawPath() );
+        matcher.matches();
 
         final ApplicationKey applicationKey = ApplicationKey.from( matcher.group( 1 ) );
         final String restPath = matcher.group( 2 );
 
-        final WebResponse response = serveAsset( applicationKey, restPath );
-        if ( response != null )
+        final Trace trace = Tracer.newTrace( "renderApp" );
+        if ( trace == null )
         {
-            return response;
+            return handleAppRequest( portalRequest, applicationKey, restPath );
+        }
+        return Tracer.traceEx( trace, () -> {
+            final WebResponse resp = handleAppRequest( portalRequest, applicationKey, restPath );
+            addTraceInfo( trace, applicationKey, restPath );
+            return resp;
+        } );
+    }
+
+    private WebResponse handleAppRequest( final PortalRequest portalRequest, final ApplicationKey applicationKey, final String path )
+    {
+        if ( path != null && !"/".equals( path ) && portalRequest.getMethod() == HttpMethod.GET )
+        {
+            final WebResponse response = serveAsset( applicationKey, path );
+            if ( response != null )
+            {
+                return response;
+            }
         }
 
-        final PortalRequest portalRequest = createRequest( req, applicationKey );
         return handleRequest( portalRequest );
     }
 
     private WebResponse handleRequest( final PortalRequest req )
-        throws Exception
     {
         try
         {
@@ -98,15 +114,6 @@ public final class AppHandler
         }
     }
 
-    private PortalRequest createRequest( final WebRequest req, final ApplicationKey applicationKey )
-    {
-        final PortalRequest portalRequest = ( req instanceof PortalRequest ) ? (PortalRequest) req : new PortalRequest( req );
-        portalRequest.setApplicationKey( applicationKey );
-        portalRequest.setBaseUri( "/app/" + applicationKey.getName() );
-
-        return portalRequest;
-    }
-
     private PortalResponse executeController( final PortalRequest req )
         throws Exception
     {
@@ -117,21 +124,32 @@ public final class AppHandler
         final WebSocketContext webSocketContext = req.getWebSocketContext();
         if ( ( webSocketContext != null ) && ( webSocketConfig != null ) )
         {
-            final WebSocketEndpoint webSocketEndpoint = newWebSocketEndpoint( webSocketConfig, script );
+            final WebSocketEndpoint webSocketEndpoint = newWebSocketEndpoint( webSocketConfig, script, req.getApplicationKey() );
             webSocketContext.apply( webSocketEndpoint );
         }
 
         return res;
     }
 
-    private WebSocketEndpoint newWebSocketEndpoint( final WebSocketConfig config, final ControllerScript script )
+    private WebSocketEndpoint newWebSocketEndpoint( final WebSocketConfig config, final ControllerScript script, final ApplicationKey app )
     {
-        return new WebSocketEndpointImpl( config, script );
+        final Trace trace = Tracer.current();
+        if ( trace != null && !trace.containsKey( "app" ) )
+        {
+            trace.put( "app", app.toString() );
+        }
+        return new WebSocketEndpointImpl( config, () -> script );
     }
 
     private ControllerScript getScript( final ApplicationKey applicationKey )
     {
-        return this.controllerScriptFactory.fromScript( ResourceKey.from( applicationKey, "main.js" ) );
+        final ResourceKey script = ResourceKey.from( applicationKey, "main.js" );
+        final Trace trace = Tracer.current();
+        if ( trace != null )
+        {
+            trace.put( "script", script.getPath() );
+        }
+        return this.controllerScriptFactory.fromScript( script );
     }
 
     private WebResponse handleError( final WebRequest webRequest, final Exception e )
@@ -157,6 +175,15 @@ public final class AppHandler
             body( resource ).
             contentType( MediaType.parse( type ) ).
             build();
+    }
+
+    private void addTraceInfo( final Trace trace, final ApplicationKey applicationKey, final String path )
+    {
+        if ( trace != null )
+        {
+            trace.put( "app", applicationKey.toString() );
+            trace.put( "path", path );
+        }
     }
 
     @Reference

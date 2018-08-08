@@ -7,7 +7,6 @@ import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonProperty;
 
 import com.enonic.xp.content.ContentId;
-import com.enonic.xp.schema.content.ContentTypeNames;
 
 public class ContentSelectorQueryJson
 {
@@ -15,19 +14,19 @@ public class ContentSelectorQueryJson
 
     private final String queryExprString;
 
-    private final Integer from;
-
-    private final Integer size;
-
     private final ContentId contentId;
 
     private final String inputName;
 
-    private final ContentTypeNames contentTypeNames;
+    private final List<String> contentTypeNames;
 
     private final List<String> allowedContentPaths;
 
     private final String relationshipType;
+
+    private Integer from;
+
+    private Integer size;
 
     @JsonCreator
     public ContentSelectorQueryJson( @JsonProperty("queryExpr") final String queryExprString, //
@@ -46,7 +45,7 @@ public class ContentSelectorQueryJson
         this.contentId = contentId != null ? ContentId.from( contentId ) : null;
         this.expand = expand != null ? expand : "none";
         this.inputName = inputName;
-        this.contentTypeNames = ContentTypeNames.from( contentTypeNamesString );
+        this.contentTypeNames = contentTypeNamesString;
         this.allowedContentPaths = allowedContentPaths;
         this.relationshipType = relationshipType;
     }
@@ -88,7 +87,7 @@ public class ContentSelectorQueryJson
     }
 
     @JsonIgnore
-    public ContentTypeNames getContentTypeNames()
+    public List<String> getContentTypeNames()
     {
         return contentTypeNames;
     }
@@ -103,5 +102,15 @@ public class ContentSelectorQueryJson
     public String getRelationshipType()
     {
         return relationshipType;
+    }
+
+    public void setFrom( final Integer from )
+    {
+        this.from = from;
+    }
+
+    public void setSize( final Integer size )
+    {
+        this.size = size;
     }
 }

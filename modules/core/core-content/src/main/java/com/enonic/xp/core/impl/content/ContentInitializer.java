@@ -5,13 +5,18 @@ import java.time.Instant;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import com.google.common.base.Preconditions;
+
 import com.enonic.xp.content.ContentConstants;
 import com.enonic.xp.content.ContentPropertyNames;
+import com.enonic.xp.context.Context;
 import com.enonic.xp.context.ContextAccessor;
 import com.enonic.xp.context.ContextBuilder;
 import com.enonic.xp.data.PropertyTree;
 import com.enonic.xp.index.ChildOrder;
 import com.enonic.xp.index.IndexPath;
+import com.enonic.xp.index.IndexService;
+import com.enonic.xp.init.ExternalInitializer;
 import com.enonic.xp.node.CreateNodeParams;
 import com.enonic.xp.node.Node;
 import com.enonic.xp.node.NodeIds;
@@ -26,19 +31,19 @@ import com.enonic.xp.repository.RepositoryService;
 import com.enonic.xp.security.PrincipalKey;
 import com.enonic.xp.security.RoleKeys;
 import com.enonic.xp.security.User;
-import com.enonic.xp.security.UserStoreKey;
 import com.enonic.xp.security.acl.AccessControlEntry;
 import com.enonic.xp.security.acl.AccessControlList;
 import com.enonic.xp.security.acl.Permission;
 import com.enonic.xp.security.auth.AuthenticationInfo;
 
 public final class ContentInitializer
+    extends ExternalInitializer
 {
     private final static Logger LOG = LoggerFactory.getLogger( ContentInitializer.class );
 
     public static final User SUPER_USER = User.create().
-        key( PrincipalKey.ofUser( UserStoreKey.system(), "su" ) ).
-        login( "su" ).
+        key( PrincipalKey.ofSuperUser() ).
+        login( PrincipalKey.ofSuperUser().getId() ).
         build();
 
     private static final AccessControlList CONTENT_REPO_DEFAULT_ACL = AccessControlList.create().
@@ -73,25 +78,37 @@ public final class ContentInitializer
 
     private final NodeService nodeService;
 
-    private final RepositoryService repositoryService;
+    private final RepositoryService repositoryService;  
 
-    public ContentInitializer( final NodeService nodeService, final RepositoryService repositoryService )
+    private ContentInitializer( final Builder builder )
     {
-        this.nodeService = nodeService;
-        this.repositoryService = repositoryService;
+        super( builder );
+        this.nodeService = builder.nodeService;
+        this.repositoryService = builder.repositoryService;
     }
 
-    public final void initialize()
+    @Override
+    public final void doInitialize()
     {
-        runAsAdmin( () -> {
-            final boolean initialized = repositoryService.isInitialized( ContentConstants.CONTENT_REPO.getId() );
-            if ( !initialized )
-            {
-                initializeRepository();
-                createDraftBranch();
-                initContentNode();
-            }
+        createAdminContext().runWith( () -> {
+            initializeRepository();
+            createDraftBranch();
+            initContentNode();
         } );
+    }
+
+    @Override
+    protected boolean isInitialized()
+    {
+        return createAdminContext().
+            callWith( () -> repositoryService.isInitialized( ContentConstants.CONTENT_REPO.getId() ) &&
+                nodeService.getByPath( ContentConstants.CONTENT_ROOT_PATH ) != null );
+    }
+
+    @Override
+    protected String getInitializationSubject()
+    {
+        return "Cms-repo";
     }
 
     private void createDraftBranch()
@@ -144,14 +161,12 @@ public final class ContentInitializer
         }
     }
 
-    private void runAsAdmin( final Runnable runnable )
+    private Context createAdminContext()
     {
         final AuthenticationInfo authInfo = createAdminAuthInfo();
-
-        ContextBuilder.from( ContentConstants.CONTEXT_MASTER ).
+        return ContextBuilder.from( ContentConstants.CONTEXT_MASTER ).
             authInfo( authInfo ).
-            build().
-            runWith( runnable );
+            build();
     }
 
     private AuthenticationInfo createAdminAuthInfo()
@@ -160,6 +175,44 @@ public final class ContentInitializer
             principals( RoleKeys.ADMIN ).
             user( SUPER_USER ).
             build();
+    }
+
+    public static Builder create()
+    {
+        return new Builder();
+    }
+
+    public static class Builder
+        extends ExternalInitializer.Builder<Builder>
+    {
+        private NodeService nodeService;
+
+        private RepositoryService repositoryService;
+
+        public Builder setNodeService( final NodeService nodeService )
+        {
+            this.nodeService = nodeService;
+            return this;
+        }
+
+        public Builder setRepositoryService( final RepositoryService repositoryService )
+        {
+            this.repositoryService = repositoryService;
+            return this;
+        }
+
+        @Override
+        protected void validate()
+        {
+            super.validate();
+            Preconditions.checkNotNull( nodeService );
+        }
+
+        public ContentInitializer build()
+        {
+            validate();
+            return new ContentInitializer( this );
+        }
     }
 
 }

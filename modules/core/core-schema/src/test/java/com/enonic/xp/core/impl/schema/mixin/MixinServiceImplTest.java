@@ -4,6 +4,7 @@ import org.junit.Test;
 
 import com.enonic.xp.app.ApplicationKey;
 import com.enonic.xp.core.impl.schema.AbstractSchemaTest;
+import com.enonic.xp.core.impl.schema.content.ContentTypeServiceImpl;
 import com.enonic.xp.form.Form;
 import com.enonic.xp.form.FormItemSet;
 import com.enonic.xp.form.FormOptionSet;
@@ -26,6 +27,8 @@ public class MixinServiceImplTest
 {
     protected MixinServiceImpl service;
 
+    protected ContentTypeServiceImpl contentTypeService;
+
     @Override
     protected void initialize()
         throws Exception
@@ -33,6 +36,11 @@ public class MixinServiceImplTest
         this.service = new MixinServiceImpl();
         this.service.setApplicationService( this.applicationService );
         this.service.setResourceService( this.resourceService );
+
+        this.contentTypeService = new ContentTypeServiceImpl();
+        this.contentTypeService.setResourceService( this.resourceService );
+        this.contentTypeService.setApplicationService( this.applicationService );
+        this.contentTypeService.setMixinService( this.service );
     }
 
     @Test
@@ -85,6 +93,20 @@ public class MixinServiceImplTest
         final Mixins mixins = service.getByContentType( contentType );
         assertNotNull( mixins );
         assertEquals( 1, mixins.getSize() );
+    }
+
+    @Test
+    public void testGetByNames()
+    {
+        Mixins mixins = service.getByNames( MixinNames.from( MediaInfo.GPS_INFO_METADATA_NAME ) );
+        assertEquals( 1, mixins.getSize() );
+
+        mixins = service.getByNames( MixinNames.from( MediaInfo.GPS_INFO_METADATA_NAME, MediaInfo.IMAGE_INFO_METADATA_NAME ) );
+        assertEquals( 2, mixins.getSize() );
+
+        mixins = service.getByNames(
+            MixinNames.from( MediaInfo.GPS_INFO_METADATA_NAME, MediaInfo.IMAGE_INFO_METADATA_NAME, MediaInfo.CAMERA_INFO_METADATA_NAME ) );
+        assertEquals( 3, mixins.getSize() );
     }
 
     @Test

@@ -32,15 +32,18 @@ public interface NodeService
 
     Nodes getByPaths( NodePaths paths );
 
-    Node duplicate( NodeId nodeId, DuplicateNodeProcessor processor );
+    Node duplicate( DuplicateNodeParams params );
 
-    Node move( NodeId nodeId, NodePath parentNodePath );
+    Node move( NodeId nodeId, NodePath parentNodePath, MoveNodeListener moveListener );
 
-    Nodes move( NodeIds nodeIds, NodePath parentNodePath );
+    Nodes move( NodeIds nodeIds, NodePath parentNodePath, MoveNodeListener moveListener );
 
     FindNodesByParentResult findByParent( FindNodesByParentParams params );
 
     FindNodesByQueryResult findByQuery( NodeQuery nodeQuery );
+
+    @Deprecated
+    FindNodePathsByQueryResult findNodePathsByQuery( NodeQuery nodeQuery );
 
     FindNodesByMultiRepoQueryResult findByQuery( MultiRepoNodeQuery nodeQuery );
 

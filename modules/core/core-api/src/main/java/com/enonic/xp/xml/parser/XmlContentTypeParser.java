@@ -2,6 +2,8 @@ package com.enonic.xp.xml.parser;
 
 import java.util.List;
 
+import org.apache.commons.lang.StringUtils;
+
 import com.google.common.annotations.Beta;
 import com.google.common.collect.Lists;
 
@@ -33,7 +35,11 @@ public final class XmlContentTypeParser
 
         assertTagName( root, "content-type" );
         this.builder.displayName( root.getChildValue( "display-name" ) );
+        this.builder.displayNameI18nKey(
+            root.getChild( "display-name" ) != null ? root.getChild( "display-name" ).getAttribute( "i18n" ) : null );
         this.builder.description( root.getChildValue( "description" ) );
+        this.builder.descriptionI18nKey(
+            root.getChild( "description" ) != null ? root.getChild( "description" ).getAttribute( "i18n" ) : null );
 
         this.builder.contentDisplayNameScript( root.getChildValue( "content-display-name-script" ) );
         this.builder.superType( this.resolver.toContentTypeName( root.getChildValue( "super-type" ) ) );
@@ -53,7 +59,11 @@ public final class XmlContentTypeParser
         final List<MixinName> names = Lists.newArrayList();
         for ( final DomElement child : root.getChildren( "x-data" ) )
         {
-            final String name = child.getAttribute( "mixin" );
+            String name = child.getAttribute( "name" );
+            if ( StringUtils.isEmpty( name ) )
+            {
+                name = child.getAttribute( "mixin" );
+            }
             names.add( this.resolver.toMixinName( name ) );
         }
 

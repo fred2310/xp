@@ -11,6 +11,8 @@ import org.junit.Before;
 import org.junit.Test;
 import org.mockito.Mockito;
 
+import com.google.common.collect.Lists;
+
 import com.enonic.xp.content.CompareContentResult;
 import com.enonic.xp.content.CompareContentResults;
 import com.enonic.xp.content.CompareContentsParams;
@@ -23,6 +25,7 @@ import com.enonic.xp.content.Contents;
 import com.enonic.xp.content.GetContentByIdsParams;
 import com.enonic.xp.icon.Icon;
 import com.enonic.xp.issue.Issue;
+import com.enonic.xp.issue.IssueComment;
 import com.enonic.xp.issue.IssueId;
 import com.enonic.xp.issue.PublishRequest;
 import com.enonic.xp.issue.PublishRequestItem;
@@ -53,6 +56,8 @@ public class IssueNotificationsSenderImplTest
 
     private ContentTypeService contentTypeService;
 
+    IssueNotificationParamsFactory.Builder notificationFactoryBuilder;
+
     @Before
     public void setUp()
     {
@@ -62,10 +67,11 @@ public class IssueNotificationsSenderImplTest
         issueNotificationsSender = new IssueNotificationsSenderImpl();
         contentTypeService = Mockito.mock( ContentTypeService.class );
 
-        issueNotificationsSender.setSecurityService( securityService );
         issueNotificationsSender.setMailService( mailService );
-        issueNotificationsSender.setContentService( contentService );
-        issueNotificationsSender.setContentTypeService( contentTypeService );
+
+        notificationFactoryBuilder =
+            IssueNotificationParamsFactory.create().contentService( contentService ).securityService( securityService ).contentTypeService(
+                contentTypeService );
     }
 
     @Test
@@ -81,7 +87,14 @@ public class IssueNotificationsSenderImplTest
         Mockito.when( securityService.getUser( issue.getApproverIds().first() ) ).thenReturn( Optional.of( approver ) );
         Mockito.when( contentService.getByIds( Mockito.any( GetContentByIdsParams.class ) ) ).thenReturn( contents );
 
-        issueNotificationsSender.notifyIssueCreated( issue, "url" );
+        IssueNotificationParams params = notificationFactoryBuilder.
+            issue( issue ).
+            comments( this.createComments( creator.getKey() ) ).
+            url( "url" ).
+            build().
+            createdParams();
+
+        issueNotificationsSender.notifyIssueCreated( params );
 
         Thread.sleep( 1000 ); // giving a chance to run threads that send mails
 
@@ -107,7 +120,14 @@ public class IssueNotificationsSenderImplTest
             approver -> Mockito.when( securityService.getUser( approver.getKey() ) ).thenReturn( Optional.of( approver ) ) );
         Mockito.when( contentService.getByIds( Mockito.any( GetContentByIdsParams.class ) ) ).thenReturn( contents );
 
-        issueNotificationsSender.notifyIssueCreated( issue, "url" );
+        IssueNotificationParams params = notificationFactoryBuilder.
+            issue( issue ).
+            comments( this.createComments( creator.getKey() ) ).
+            url( "url" ).
+            build().
+            createdParams();
+
+        issueNotificationsSender.notifyIssueCreated( params );
 
         Thread.sleep( 1000 ); // giving a chance to run threads that send mails
 
@@ -144,7 +164,55 @@ public class IssueNotificationsSenderImplTest
             ContentType.create().name( "mycontenttype" ).icon( Icon.from( new byte[]{1}, "image/svg+xml", Instant.now() ) ).setBuiltIn(
                 true ).build() );
 
-        issueNotificationsSender.notifyIssueUpdated( issue, "url" );
+        IssueUpdatedNotificationParams params = notificationFactoryBuilder.
+            issue( issue ).
+            comments( this.createComments( creator.getKey() ) ).
+            url( "url" ).
+            build().
+            updatedParams();
+
+        issueNotificationsSender.notifyIssueUpdated( params );
+
+        verify( securityService, times( 2 ) ).getUser( Mockito.any() );
+        verify( contentService, times( 1 ) ).getByIds( Mockito.any() );
+        verify( contentService, times( 1 ) ).compare( Mockito.any( CompareContentsParams.class ) );
+    }
+
+    @Test
+    public void testNotifyIssueCommented()
+        throws Exception
+    {
+        final User creator = generateUser();
+        final User approver = generateUserNoEmail();
+        final Issue issue = createIssue( creator.getKey(), PrincipalKeys.from( approver.getKey() ) );
+        final Content content = Content.create().
+            id( ContentId.from( "aaa" ) ).
+            type( ContentTypeName.folder() ).
+            name( "name" ).
+            parentPath( ContentPath.from( "/aaa" ) ).
+            build();
+        final Contents contents = Contents.from( content );
+        final CompareContentResults compareResults = CompareContentResults.create().
+            add( new CompareContentResult( CompareStatus.NEW, ContentId.from( "aaa" ) ) ).
+            add( new CompareContentResult( CompareStatus.NEW, ContentId.from( "contentId2" ) ) ).
+            build();
+
+        Mockito.when( securityService.getUser( issue.getCreator() ) ).thenReturn( Optional.of( creator ) );
+        Mockito.when( securityService.getUser( issue.getApproverIds().first() ) ).thenReturn( Optional.of( approver ) );
+        Mockito.when( contentService.getByIds( Mockito.any( GetContentByIdsParams.class ) ) ).thenReturn( contents );
+        Mockito.when( contentService.compare( Mockito.any( CompareContentsParams.class ) ) ).thenReturn( compareResults );
+        Mockito.when( contentTypeService.getByName( Mockito.isA( GetContentTypeParams.class ) ) ).thenReturn(
+            ContentType.create().name( "mycontenttype" ).icon( Icon.from( new byte[]{1}, "image/svg+xml", Instant.now() ) ).setBuiltIn(
+                true ).build() );
+
+        IssueCommentedNotificationParams params = notificationFactoryBuilder.
+            issue( issue ).
+            comments( this.createComments( creator.getKey() ) ).
+            url( "url" ).
+            build().
+            commentedParams();
+
+        issueNotificationsSender.notifyIssueCommented( params );
 
         verify( securityService, times( 2 ) ).getUser( Mockito.any() );
         verify( contentService, times( 1 ) ).getByIds( Mockito.any() );
@@ -178,7 +246,14 @@ public class IssueNotificationsSenderImplTest
             ContentType.create().name( "mycontenttype" ).icon( Icon.from( new byte[]{1}, "image/svg+xml", Instant.now() ) ).setBuiltIn(
                 true ).build() );
 
-        issueNotificationsSender.notifyIssueUpdated( issue, "url" );
+        IssueUpdatedNotificationParams params = notificationFactoryBuilder.
+            issue( issue ).
+            comments( this.createComments( creator.getKey() ) ).
+            url( "url" ).
+            build().
+            updatedParams();
+
+        issueNotificationsSender.notifyIssueUpdated( params );
 
         verify( mailService, never() ).send( Mockito.any() );
     }
@@ -196,7 +271,14 @@ public class IssueNotificationsSenderImplTest
         Mockito.when( securityService.getUser( issue.getApproverIds().first() ) ).thenReturn( Optional.of( approver ) );
         Mockito.when( contentService.getByIds( Mockito.any( GetContentByIdsParams.class ) ) ).thenReturn( contents );
 
-        issueNotificationsSender.notifyIssuePublished( issue, "url" );
+        IssuePublishedNotificationParams params = notificationFactoryBuilder.
+            issue( issue ).
+            comments( this.createComments( creator.getKey() ) ).
+            url( "url" ).
+            build().
+            publishedParams();
+
+        issueNotificationsSender.notifyIssuePublished( params );
 
         verify( securityService, times( 2 ) ).getUser( Mockito.any() );
         verify( contentService, times( 1 ) ).getByIds( Mockito.any() );
@@ -216,16 +298,37 @@ public class IssueNotificationsSenderImplTest
         Mockito.when( securityService.getUser( issue.getApproverIds().first() ) ).thenReturn( Optional.empty() );
         Mockito.when( contentService.getByIds( Mockito.any( GetContentByIdsParams.class ) ) ).thenReturn( contents );
 
-        issueNotificationsSender.notifyIssuePublished( issue, "url" );
+        IssuePublishedNotificationParams params = notificationFactoryBuilder.
+            issue( issue ).
+            comments( this.createComments( creator.getKey() ) ).
+            url( "url" ).
+            build().
+            publishedParams();
+
+        issueNotificationsSender.notifyIssuePublished( params );
 
         verify( mailService, never() ).send( Mockito.any() );
     }
 
     private Issue createIssue( final PrincipalKey creator, final PrincipalKeys approvers )
     {
-        return Issue.create().id( IssueId.create() ).title( "title" ).description( "description" ).creator( creator ).addApproverIds(
-            approvers ).setPublishRequest( PublishRequest.create().addExcludeId( ContentId.from( "exclude-id" ) ).addItem(
+        return Issue.create().
+            id( IssueId.create() ).
+            title( "title" ).
+            description( "description" ).
+            creator( creator ).
+            addApproverIds( approvers ).setPublishRequest( PublishRequest.create().addExcludeId( ContentId.from( "exclude-id" ) ).addItem(
             PublishRequestItem.create().id( ContentId.from( "content-id" ) ).includeChildren( true ).build() ).build() ).build();
+    }
+
+    private List<IssueComment> createComments( final PrincipalKey creator )
+    {
+        final IssueComment comment = IssueComment.create().
+            text( "Comment One" ).
+            creator( creator ).
+            creatorDisplayName( "Creator" ).
+            build();
+        return Lists.newArrayList( comment );
     }
 
     private User generateUser()

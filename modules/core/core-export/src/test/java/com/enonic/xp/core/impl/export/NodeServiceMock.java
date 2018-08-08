@@ -18,8 +18,9 @@ import com.enonic.xp.node.AttachedBinary;
 import com.enonic.xp.node.BinaryAttachment;
 import com.enonic.xp.node.CreateNodeParams;
 import com.enonic.xp.node.CreateRootNodeParams;
-import com.enonic.xp.node.DuplicateNodeProcessor;
+import com.enonic.xp.node.DuplicateNodeParams;
 import com.enonic.xp.node.EditableNode;
+import com.enonic.xp.node.FindNodePathsByQueryResult;
 import com.enonic.xp.node.FindNodesByMultiRepoQueryResult;
 import com.enonic.xp.node.FindNodesByParentParams;
 import com.enonic.xp.node.FindNodesByParentResult;
@@ -32,6 +33,7 @@ import com.enonic.xp.node.ImportNodeResult;
 import com.enonic.xp.node.ImportNodeVersionParams;
 import com.enonic.xp.node.LoadNodeParams;
 import com.enonic.xp.node.LoadNodeResult;
+import com.enonic.xp.node.MoveNodeListener;
 import com.enonic.xp.node.MultiRepoNodeQuery;
 import com.enonic.xp.node.Node;
 import com.enonic.xp.node.NodeComparison;
@@ -246,13 +248,13 @@ class NodeServiceMock
     }
 
     @Override
-    public Node duplicate( final NodeId nodeId, final DuplicateNodeProcessor processor )
+    public Node duplicate( final DuplicateNodeParams params )
     {
-        throw new UnsupportedOperationException( "Not implemented in mock" );
+        return null;
     }
 
     @Override
-    public Node move( final NodeId nodeId, final NodePath parentNodePath )
+    public Node move( final NodeId nodeId, final NodePath parentNodePath, final MoveNodeListener moveListener )
     {
         return null;
     }
@@ -270,12 +272,7 @@ class NodeServiceMock
         final FindNodesByParentResult.Builder resultBuilder = FindNodesByParentResult.create();
 
         final Nodes.Builder nodesBuilder = Nodes.create();
-
-        for ( final MockNodeTree<NodePath> treeNode : parentNode.children )
-        {
-            nodesBuilder.add( nodePathMap.get( treeNode.data ) );
-        }
-
+        getNodes(parentNode, nodesBuilder, params.isRecursive());
         final Nodes nodes = nodesBuilder.build();
 
         return resultBuilder.hits( nodes.getSize() ).
@@ -285,9 +282,25 @@ class NodeServiceMock
             totalHits( nodes.getSize() ).
             build();
     }
+    
+    private void getNodes(MockNodeTree<NodePath> parentNode, Nodes.Builder nodesBuilder, final boolean recursive) {
+        for ( final MockNodeTree<NodePath> treeNode : parentNode.children )
+        {
+            nodesBuilder.add( nodePathMap.get( treeNode.data ) );
+            if (recursive) {
+                getNodes( treeNode, nodesBuilder, recursive );
+            }
+        }
+    }
 
     @Override
     public FindNodesByQueryResult findByQuery( final NodeQuery nodeQuery )
+    {
+        throw new UnsupportedOperationException( "Not implemented in mock" );
+    }
+
+    @Override
+    public FindNodePathsByQueryResult findNodePathsByQuery( final NodeQuery nodeQuery )
     {
         throw new UnsupportedOperationException( "Not implemented in mock" );
     }
@@ -404,7 +417,7 @@ class NodeServiceMock
     }
 
     @Override
-    public Nodes move( final NodeIds nodeIds, final NodePath parentNodePath )
+    public Nodes move( final NodeIds nodeIds, final NodePath parentNodePath, MoveNodeListener moveListener )
     {
         throw new UnsupportedOperationException( "Not implemented in mock" );
     }

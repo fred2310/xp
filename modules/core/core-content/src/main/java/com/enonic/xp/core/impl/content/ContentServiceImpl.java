@@ -21,6 +21,7 @@ import org.slf4j.LoggerFactory;
 import com.google.common.io.ByteSource;
 import com.google.common.util.concurrent.ThreadFactoryBuilder;
 
+import com.enonic.xp.app.ApplicationKey;
 import com.enonic.xp.content.ApplyContentPermissionsParams;
 import com.enonic.xp.content.CompareContentParams;
 import com.enonic.xp.content.CompareContentResult;
@@ -33,6 +34,7 @@ import com.enonic.xp.content.ContentId;
 import com.enonic.xp.content.ContentIds;
 import com.enonic.xp.content.ContentPath;
 import com.enonic.xp.content.ContentPaths;
+import com.enonic.xp.content.ContentPropertyNames;
 import com.enonic.xp.content.ContentPublishInfo;
 import com.enonic.xp.content.ContentQuery;
 import com.enonic.xp.content.ContentService;
@@ -43,12 +45,14 @@ import com.enonic.xp.content.CreateMediaParams;
 import com.enonic.xp.content.DeleteContentParams;
 import com.enonic.xp.content.DeleteContentsResult;
 import com.enonic.xp.content.DuplicateContentParams;
+import com.enonic.xp.content.DuplicateContentsResult;
 import com.enonic.xp.content.FindContentByParentParams;
 import com.enonic.xp.content.FindContentByParentResult;
 import com.enonic.xp.content.FindContentByQueryParams;
 import com.enonic.xp.content.FindContentByQueryResult;
 import com.enonic.xp.content.FindContentIdsByParentResult;
 import com.enonic.xp.content.FindContentIdsByQueryResult;
+import com.enonic.xp.content.FindContentPathsByQueryParams;
 import com.enonic.xp.content.FindContentVersionsParams;
 import com.enonic.xp.content.FindContentVersionsResult;
 import com.enonic.xp.content.GetActiveContentVersionsParams;
@@ -59,6 +63,7 @@ import com.enonic.xp.content.GetPublishStatusesParams;
 import com.enonic.xp.content.GetPublishStatusesResult;
 import com.enonic.xp.content.HasUnpublishedChildrenParams;
 import com.enonic.xp.content.MoveContentParams;
+import com.enonic.xp.content.MoveContentsResult;
 import com.enonic.xp.content.PublishContentResult;
 import com.enonic.xp.content.PublishStatus;
 import com.enonic.xp.content.PushContentParams;
@@ -98,6 +103,10 @@ import com.enonic.xp.node.ReorderChildNodeParams;
 import com.enonic.xp.node.ReorderChildNodesParams;
 import com.enonic.xp.node.ReorderChildNodesResult;
 import com.enonic.xp.node.SetNodeChildOrderParams;
+import com.enonic.xp.page.PageDescriptorService;
+import com.enonic.xp.query.parser.QueryParser;
+import com.enonic.xp.region.LayoutDescriptorService;
+import com.enonic.xp.region.PartDescriptorService;
 import com.enonic.xp.repository.RepositoryService;
 import com.enonic.xp.schema.content.ContentTypeName;
 import com.enonic.xp.schema.content.ContentTypeService;
@@ -109,6 +118,8 @@ import com.enonic.xp.site.CreateSiteParams;
 import com.enonic.xp.site.Site;
 import com.enonic.xp.site.SiteConfigsDataSerializer;
 import com.enonic.xp.site.SiteService;
+import com.enonic.xp.trace.Trace;
+import com.enonic.xp.trace.Tracer;
 import com.enonic.xp.util.BinaryReference;
 
 @Component(immediate = true)
@@ -147,6 +158,12 @@ public class ContentServiceImpl
 
     private FormDefaultValuesProcessor formDefaultValuesProcessor;
 
+    private PageDescriptorService pageDescriptorService;
+
+    private PartDescriptorService partDescriptorService;
+
+    private LayoutDescriptorService layoutDescriptorService;
+
     public ContentServiceImpl()
     {
         final ThreadFactory namedThreadFactory = new ThreadFactoryBuilder().
@@ -160,10 +177,12 @@ public class ContentServiceImpl
     @Activate
     public void initialize()
     {
-        if ( this.indexService.isMaster() )
-        {
-            new ContentInitializer( this.nodeService, this.repositoryService ).initialize();
-        }
+        ContentInitializer.create().
+            setIndexService( indexService ).
+            setNodeService( nodeService ).
+            setRepositoryService( repositoryService ).
+            build().
+            initialize();
     }
 
     @Override
@@ -192,6 +211,9 @@ public class ContentServiceImpl
             mixinService( this.mixinService ).
             contentProcessors( this.contentProcessors ).
             formDefaultValuesProcessor( this.formDefaultValuesProcessor ).
+            pageDescriptorService( this.pageDescriptorService ).
+            partDescriptorService( this.partDescriptorService ).
+            layoutDescriptorService( this.layoutDescriptorService ).
             params( createContentParams ).
             build().
             execute();
@@ -222,6 +244,9 @@ public class ContentServiceImpl
             mixinService( this.mixinService ).
             contentProcessors( this.contentProcessors ).
             formDefaultValuesProcessor( this.formDefaultValuesProcessor ).
+            pageDescriptorService( this.pageDescriptorService ).
+            partDescriptorService( this.partDescriptorService ).
+            layoutDescriptorService( this.layoutDescriptorService ).
             params( params ).
             build().
             execute();
@@ -259,6 +284,9 @@ public class ContentServiceImpl
             mixinService( this.mixinService ).
             contentProcessors( this.contentProcessors ).
             formDefaultValuesProcessor( this.formDefaultValuesProcessor ).
+            pageDescriptorService( this.pageDescriptorService ).
+            partDescriptorService( this.partDescriptorService ).
+            layoutDescriptorService( this.layoutDescriptorService ).
             build().
             execute();
     }
@@ -274,6 +302,9 @@ public class ContentServiceImpl
             siteService( this.siteService ).
             mixinService( this.mixinService ).
             contentProcessors( this.contentProcessors ).
+            pageDescriptorService( this.pageDescriptorService ).
+            partDescriptorService( this.partDescriptorService ).
+            layoutDescriptorService( this.layoutDescriptorService ).
             build().
             execute();
     }
@@ -287,6 +318,9 @@ public class ContentServiceImpl
             translator( this.translator ).
             eventPublisher( this.eventPublisher ).
             mediaInfoService( this.mediaInfoService ).
+            pageDescriptorService( this.pageDescriptorService ).
+            partDescriptorService( this.partDescriptorService ).
+            layoutDescriptorService( this.layoutDescriptorService ).
             siteService( this.siteService ).
             mixinService( this.mixinService ).
             contentProcessors( this.contentProcessors ).
@@ -306,7 +340,6 @@ public class ContentServiceImpl
             build().
             execute();
     }
-
 
     @Override
     public DeleteContentsResult deleteWithoutFetch( final DeleteContentParams params )
@@ -458,7 +491,21 @@ public class ContentServiceImpl
     @Override
     public Content getById( final ContentId contentId )
     {
-        return doGetById( contentId );
+        final Trace trace = Tracer.newTrace( "content.getById" );
+        if ( trace == null )
+        {
+            return doGetById( contentId );
+        }
+
+        return Tracer.trace( trace, () -> {
+            trace.put( "id", contentId );
+            final Content content = doGetById( contentId );
+            if ( content != null )
+            {
+                trace.put( "path", content.getPath() );
+            }
+            return content;
+        } );
     }
 
     private Content doGetById( final ContentId contentId )
@@ -475,6 +522,25 @@ public class ContentServiceImpl
     @Override
     public Site getNearestSite( final ContentId contentId )
     {
+        final Trace trace = Tracer.newTrace( "content.getNearestSite" );
+        if ( trace == null )
+        {
+            return doGetNearestSite( contentId );
+        }
+
+        return Tracer.trace( trace, () -> {
+            trace.put( "id", contentId );
+            final Site site = doGetNearestSite( contentId );
+            if ( site != null )
+            {
+                trace.put( "path", site.getPath() );
+            }
+            return site;
+        } );
+    }
+
+    private Site doGetNearestSite( final ContentId contentId )
+    {
         return GetNearestSiteCommand.create().
             contentId( contentId ).
             nodeService( this.nodeService ).
@@ -488,6 +554,20 @@ public class ContentServiceImpl
     @Override
     public Contents getByIds( final GetContentByIdsParams params )
     {
+        final Trace trace = Tracer.newTrace( "content.getByIds" );
+        if ( trace == null )
+        {
+            return doGetByIds( params );
+        }
+
+        return Tracer.trace( trace, () -> {
+            trace.put( "id", params.getIds() );
+            return doGetByIds( params );
+        } );
+    }
+
+    private Contents doGetByIds( final GetContentByIdsParams params )
+    {
         return GetContentByIdsCommand.create( params ).
             nodeService( this.nodeService ).
             contentTypeService( this.contentTypeService ).
@@ -499,6 +579,25 @@ public class ContentServiceImpl
 
     @Override
     public Content getByPath( final ContentPath path )
+    {
+        final Trace trace = Tracer.newTrace( "content.getByPath" );
+        if ( trace == null )
+        {
+            return executeGetByPath( path );
+        }
+
+        return Tracer.trace( trace, () -> {
+            trace.put( "path", path );
+            final Content content = executeGetByPath( path );
+            if ( content != null )
+            {
+                trace.put( "id", content.getId() );
+            }
+            return content;
+        } );
+    }
+
+    private Content executeGetByPath( final ContentPath path )
     {
         return GetContentByPathCommand.create( path ).
             nodeService( this.nodeService ).
@@ -523,6 +622,20 @@ public class ContentServiceImpl
     @Override
     public Contents getByPaths( final ContentPaths paths )
     {
+        final Trace trace = Tracer.newTrace( "content.getByPaths" );
+        if ( trace == null )
+        {
+            return doGetByPaths( paths );
+        }
+
+        return Tracer.trace( trace, () -> {
+            trace.put( "path", paths );
+            return doGetByPaths( paths );
+        } );
+    }
+
+    private Contents doGetByPaths( final ContentPaths paths )
+    {
         return GetContentByPathsCommand.create( paths ).
             nodeService( this.nodeService ).
             contentTypeService( this.contentTypeService ).
@@ -534,6 +647,24 @@ public class ContentServiceImpl
 
     @Override
     public FindContentByParentResult findByParent( final FindContentByParentParams params )
+    {
+        final Trace trace = Tracer.newTrace( "content.findByParent" );
+        if ( trace == null )
+        {
+            return doFindByParent( params );
+        }
+
+        return Tracer.trace( trace, () -> {
+            trace.put( "query", params.getParentPath() != null ? params.getParentPath() : params.getParentId() );
+            trace.put( "from", params.getFrom() );
+            trace.put( "size", params.getSize() );
+            final FindContentByParentResult result = doFindByParent( params );
+            trace.put( "hits", result.getTotalHits() );
+            return result;
+        } );
+    }
+
+    private FindContentByParentResult doFindByParent( final FindContentByParentParams params )
     {
         return FindContentByParentCommand.create( params ).
             nodeService( this.nodeService ).
@@ -557,14 +688,20 @@ public class ContentServiceImpl
     }
 
     @Override
-    public Content duplicate( final DuplicateContentParams params )
+    public DuplicateContentsResult duplicate( final DuplicateContentParams params )
     {
-        final Node createdNode = nodeService.duplicate( NodeId.from( params.getContentId() ), new DuplicateContentProcessor() );
-        return translator.fromNode( createdNode, true );
+        return DuplicateContentCommand.create( params ).
+            nodeService( this.nodeService ).
+            contentTypeService( this.contentTypeService ).
+            translator( this.translator ).
+            eventPublisher( this.eventPublisher ).
+            duplicateListener( params.getDuplicateContentListener() ).
+            build().
+            execute();
     }
 
     @Override
-    public Content move( final MoveContentParams params )
+    public MoveContentsResult move( final MoveContentParams params )
     {
         return MoveContentCommand.create( params ).
             nodeService( this.nodeService ).
@@ -572,6 +709,7 @@ public class ContentServiceImpl
             translator( this.translator ).
             eventPublisher( this.eventPublisher ).
             contentService( this ).
+            moveListener( params.getMoveContentListener() ).
             build().
             execute();
     }
@@ -587,6 +725,9 @@ public class ContentServiceImpl
             translator( this.translator ).
             eventPublisher( this.eventPublisher ).
             contentProcessors( this.contentProcessors ).
+            pageDescriptorService( this.pageDescriptorService ).
+            partDescriptorService( this.partDescriptorService ).
+            layoutDescriptorService( this.layoutDescriptorService ).
             build().
             execute();
     }
@@ -608,8 +749,54 @@ public class ContentServiceImpl
     @Override
     public FindContentIdsByQueryResult find( final ContentQuery query )
     {
+        final Trace trace = Tracer.newTrace( "content.find" );
+        if ( trace == null )
+        {
+            return doFind( query );
+        }
+
+        return Tracer.trace( trace, () -> {
+            trace.put( "query", query.getQueryExpr() != null ? query.getQueryExpr().toString() : "" );
+            trace.put( "from", query.getFrom() );
+            trace.put( "size", query.getSize() );
+            final FindContentIdsByQueryResult result = doFind( query );
+            trace.put( "hits", result.getTotalHits() );
+            return result;
+        } );
+    }
+
+    private FindContentIdsByQueryResult doFind( final ContentQuery query )
+    {
         return FindContentIdsByQueryCommand.create().
             query( query ).
+            nodeService( this.nodeService ).
+            contentTypeService( this.contentTypeService ).
+            translator( this.translator ).
+            eventPublisher( this.eventPublisher ).
+            build().
+            execute();
+    }
+
+    public Contents findByApplicationKey( final ApplicationKey key )
+    {
+        final ContentQuery query = ContentQuery.create().
+            queryExpr( QueryParser.parse( new StringBuilder(
+                String.join( ".", ContentPropertyNames.DATA, ContentPropertyNames.SITECONFIG, ContentPropertyNames.APPLICATION_KEY ) ).
+                append( "=" ).
+                append( "'" ).append( key ).append( "'" ).
+                toString() ) ).
+            size( -1 ).
+            build();
+
+        return this.getByIds( new GetContentByIdsParams( this.find( query ).getContentIds() ) );
+
+    }
+
+    @Override
+    public ContentPaths findContentPaths( ContentQuery query )
+    {
+        return FindContentPathsByQueryCommand.create().
+            params( new FindContentPathsByQueryParams( query ) ).
             nodeService( this.nodeService ).
             contentTypeService( this.contentTypeService ).
             translator( this.translator ).
@@ -771,11 +958,17 @@ public class ContentServiceImpl
         final Context context = ContextAccessor.current();
 
         return CompletableFuture.supplyAsync( () -> {
-            // set current context as background thread context
-            final Context futureContext = ContextBuilder.from( context ).build();
-
-            return futureContext.callWith( applyPermissionsCommand::execute );
-
+            try
+            {
+                // set current context as background thread context
+                final Context futureContext = ContextBuilder.from( context ).detachSession().build();
+                return futureContext.callWith( applyPermissionsCommand::execute );
+            }
+            catch ( Throwable t )
+            {
+                LOG.warn( "Error applying permissions", t );
+                return 0;
+            }
         }, applyPermissionsExecutor );
     }
 
@@ -877,6 +1070,9 @@ public class ContentServiceImpl
             translator( this.translator ).
             eventPublisher( this.eventPublisher ).
             mediaInfoService( this.mediaInfoService ).
+            pageDescriptorService( this.pageDescriptorService ).
+            partDescriptorService( this.partDescriptorService ).
+            layoutDescriptorService( this.layoutDescriptorService ).
             siteService( this.siteService ).
             mixinService( this.mixinService ).
             contentProcessors( this.contentProcessors ).
@@ -970,5 +1166,23 @@ public class ContentServiceImpl
     public void setFormDefaultValuesProcessor( final FormDefaultValuesProcessor formDefaultValuesProcessor )
     {
         this.formDefaultValuesProcessor = formDefaultValuesProcessor;
+    }
+
+    @Reference
+    public void setPageDescriptorService( final PageDescriptorService pageDescriptorService )
+    {
+        this.pageDescriptorService = pageDescriptorService;
+    }
+
+    @Reference
+    public void setPartDescriptorService( final PartDescriptorService partDescriptorService )
+    {
+        this.partDescriptorService = partDescriptorService;
+    }
+
+    @Reference
+    public void setLayoutDescriptorService( final LayoutDescriptorService layoutDescriptorService )
+    {
+        this.layoutDescriptorService = layoutDescriptorService;
     }
 }

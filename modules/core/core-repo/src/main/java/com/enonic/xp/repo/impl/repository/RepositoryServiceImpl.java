@@ -64,10 +64,12 @@ public class RepositoryServiceImpl
     @Activate
     public void initialize()
     {
-        if ( this.indexServiceInternal.isMaster() )
-        {
-            new SystemRepoInitializer( this, this.nodeStorageService ).initialize();
-        }
+        SystemRepoInitializer.create().
+            setIndexServiceInternal( indexServiceInternal ).
+            setRepositoryService( this ).
+            setNodeStorageService( nodeStorageService ).
+            build().
+            initialize();
     }
 
     @Override

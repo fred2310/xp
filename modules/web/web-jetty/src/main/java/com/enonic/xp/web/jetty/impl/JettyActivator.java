@@ -5,6 +5,7 @@ import java.util.Hashtable;
 
 import javax.servlet.ServletContext;
 
+import org.eclipse.jetty.server.session.SessionDataStore;
 import org.osgi.framework.BundleContext;
 import org.osgi.framework.ServiceRegistration;
 import org.osgi.service.component.annotations.Activate;
@@ -12,7 +13,10 @@ import org.osgi.service.component.annotations.Component;
 import org.osgi.service.component.annotations.Deactivate;
 import org.osgi.service.component.annotations.Reference;
 
+import com.enonic.xp.cluster.ClusterConfig;
+import com.enonic.xp.status.StatusReporter;
 import com.enonic.xp.web.dispatch.DispatchServlet;
+import com.enonic.xp.web.thread.ThreadPoolInfo;
 
 @Component(immediate = true, service = JettyController.class, configurationPid = "com.enonic.xp.web.jetty")
 public final class JettyActivator
@@ -26,7 +30,13 @@ public final class JettyActivator
 
     private ServiceRegistration controllerReg;
 
+    private ServiceRegistration statusReporterReg;
+
     private DispatchServlet dispatchServlet;
+
+    private ClusterConfig clusterConfig;
+
+    private SessionDataStore sessionDataStore;
 
     @Activate
     public void activate( final BundleContext context, final JettyConfig config )
@@ -38,11 +48,18 @@ public final class JettyActivator
         this.config = config;
         this.service = new JettyService();
         this.service.config = this.config;
+        this.service.workerName = clusterConfig.name().toString();
+        if ( clusterConfig.isEnabled() && clusterConfig.isSessionReplicationEnabled() )
+        {
+            this.service.sessionDataStore = sessionDataStore;
+        }
 
         this.service.dispatcherServlet = this.dispatchServlet;
         this.service.start();
 
         publishController();
+        publishStatusReporter();
+        publishThreadPoolInfo();
     }
 
     @Deactivate
@@ -50,6 +67,7 @@ public final class JettyActivator
         throws Exception
     {
         this.controllerReg.unregister();
+        this.statusReporterReg.unregister();
         this.service.stop();
     }
 
@@ -79,9 +97,33 @@ public final class JettyActivator
         this.controllerReg = this.context.registerService( JettyController.class, this, map );
     }
 
+    private void publishStatusReporter()
+    {
+        final HttpThreadPoolStatusReporter statusReporter = new HttpThreadPoolStatusReporter( this.service.server.getThreadPool() );
+        this.statusReporterReg = this.context.registerService( StatusReporter.class, statusReporter, new Hashtable<>() );
+    }
+
+    private void publishThreadPoolInfo()
+    {
+        final ThreadPoolInfoImpl threadPoolInfo = new ThreadPoolInfoImpl( this.service.server.getThreadPool() );
+        this.statusReporterReg = this.context.registerService( ThreadPoolInfo.class, threadPoolInfo, new Hashtable<>() );
+    }
+
     @Reference
     public void setDispatchServlet( final DispatchServlet dispatchServlet )
     {
         this.dispatchServlet = dispatchServlet;
+    }
+
+    @Reference
+    public void setClusterConfig( final ClusterConfig clusterConfig )
+    {
+        this.clusterConfig = clusterConfig;
+    }
+
+    @Reference
+    public void setSessionDataStore( final SessionDataStore sessionDataStore )
+    {
+        this.sessionDataStore = sessionDataStore;
     }
 }

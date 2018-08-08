@@ -2,6 +2,7 @@ package com.enonic.xp.schema;
 
 
 import java.time.Instant;
+import java.util.Objects;
 
 import com.google.common.annotations.Beta;
 import com.google.common.base.Preconditions;
@@ -16,7 +17,11 @@ public abstract class BaseSchema<T extends BaseSchemaName>
 
     final String displayName;
 
+    final String displayNameI18nKey;
+
     final String description;
+
+    final String descriptionI18nKey;
 
     final Instant createdTime;
 
@@ -33,7 +38,9 @@ public abstract class BaseSchema<T extends BaseSchemaName>
         this.name = (T) builder.name;
         this.displayName =
             builder.displayName == null || builder.displayName.trim().isEmpty() ? builder.name.getLocalName() : builder.displayName;
+        this.displayNameI18nKey = builder.displayNameI18nKey;
         this.description = builder.description;
+        this.descriptionI18nKey = builder.descriptionI18nKey;
         this.createdTime = builder.createdTime;
         this.modifiedTime = builder.modifiedTime;
         this.creator = builder.creator;
@@ -51,9 +58,19 @@ public abstract class BaseSchema<T extends BaseSchemaName>
         return displayName;
     }
 
+    public String getDisplayNameI18nKey()
+    {
+        return displayNameI18nKey;
+    }
+
     public String getDescription()
     {
         return description;
+    }
+
+    public String getDescriptionI18nKey()
+    {
+        return descriptionI18nKey;
     }
 
     public Instant getCreatedTime()
@@ -81,13 +98,43 @@ public abstract class BaseSchema<T extends BaseSchemaName>
         return icon;
     }
 
+    @Override
+    public boolean equals( final Object o )
+    {
+        if ( this == o )
+        {
+            return true;
+        }
+        if ( o == null || getClass() != o.getClass() )
+        {
+            return false;
+        }
+        final BaseSchema<?> that = (BaseSchema<?>) o;
+        return Objects.equals( name, that.name ) && Objects.equals( displayName, that.displayName ) &&
+            Objects.equals( displayNameI18nKey, that.displayNameI18nKey ) && Objects.equals( description, that.description ) &&
+            Objects.equals( descriptionI18nKey, that.descriptionI18nKey ) && Objects.equals( createdTime, that.createdTime ) &&
+            Objects.equals( modifiedTime, that.modifiedTime ) && Objects.equals( creator, that.creator ) &&
+            Objects.equals( modifier, that.modifier ) && Objects.equals( icon, that.icon );
+    }
+
+    @Override
+    public int hashCode()
+    {
+        return Objects.hash( name, displayName, displayNameI18nKey, description, descriptionI18nKey, createdTime, modifiedTime, creator,
+                             modifier, icon );
+    }
+
     public static class Builder<T extends Builder, SCHEMA_NAME extends BaseSchemaName>
     {
         protected SCHEMA_NAME name;
 
         private String displayName;
 
+        private String displayNameI18nKey;
+
         private String description;
+
+        private String descriptionI18nKey;
 
         private Instant createdTime;
 
@@ -108,7 +155,9 @@ public abstract class BaseSchema<T extends BaseSchemaName>
             Preconditions.checkNotNull( schema, "schema cannot be null" );
             this.name = (SCHEMA_NAME) schema.name;
             this.displayName = schema.displayName;
+            this.displayNameI18nKey = schema.displayNameI18nKey;
             this.description = schema.description;
+            this.descriptionI18nKey = schema.descriptionI18nKey;
             this.createdTime = schema.createdTime;
             this.modifiedTime = schema.modifiedTime;
             this.creator = schema.creator;
@@ -133,9 +182,21 @@ public abstract class BaseSchema<T extends BaseSchemaName>
             return getThis();
         }
 
+        public T displayNameI18nKey( String value )
+        {
+            this.displayNameI18nKey = value;
+            return getThis();
+        }
+
         public T description( String value )
         {
             this.description = value;
+            return getThis();
+        }
+
+        public T descriptionI18nKey( final String descriptionI18nKey )
+        {
+            this.descriptionI18nKey = descriptionI18nKey;
             return getThis();
         }
 

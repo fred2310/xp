@@ -2,7 +2,9 @@ package com.enonic.xp.lib.content;
 
 import java.time.Instant;
 
+import org.junit.Rule;
 import org.junit.Test;
+import org.junit.rules.ExpectedException;
 import org.mockito.Mockito;
 
 import com.enonic.xp.aggregation.Aggregations;
@@ -21,11 +23,21 @@ import com.enonic.xp.content.GetContentByIdsParams;
 public class QueryContentHandlerTest
     extends BaseContentHandlerTest
 {
+    @Rule
+    public ExpectedException thrown = ExpectedException.none();
+
     @Test
     public void testExample()
     {
         setupQuery( 2, true );
         runScript( "/site/lib/xp/examples/content/query.js" );
+    }
+
+    @Test
+    public void filterArray()
+    {
+        setupQuery( 2, false );
+        runFunction( "/site/test/QueryContentHandlerTest_filter_array.js", "query" );
     }
 
     @Test

@@ -1,16 +1,21 @@
 package com.enonic.xp.admin.impl.widget;
 
 import java.util.Arrays;
+import java.util.Set;
+import java.util.stream.Collectors;
 
 import org.osgi.service.component.annotations.Component;
 import org.osgi.service.component.annotations.Reference;
 
 import com.enonic.xp.admin.widget.WidgetDescriptor;
 import com.enonic.xp.admin.widget.WidgetDescriptorService;
+import com.enonic.xp.app.ApplicationKey;
 import com.enonic.xp.context.ContextAccessor;
+import com.enonic.xp.descriptor.DescriptorKeyLocator;
 import com.enonic.xp.descriptor.DescriptorService;
 import com.enonic.xp.descriptor.Descriptors;
 import com.enonic.xp.page.DescriptorKey;
+import com.enonic.xp.resource.ResourceService;
 import com.enonic.xp.security.PrincipalKeys;
 
 @Component(immediate = true)
@@ -19,8 +24,19 @@ public final class WidgetDescriptorServiceImpl
 {
     private DescriptorService descriptorService;
 
+    private final static String PATH = "/admin/widgets";
+
+    private ResourceService resourceService;
+
     @Override
     public Descriptors<WidgetDescriptor> getByInterfaces( final String... interfaceNames )
+    {
+        return this.descriptorService.getAll( WidgetDescriptor.class ).
+            filter( widgetDescriptor -> Arrays.stream( interfaceNames ).anyMatch( widgetDescriptor::hasInterface ) );
+    }
+
+    @Override
+    public Descriptors<WidgetDescriptor> getAllowedByInterfaces( final String... interfaceNames )
     {
         final PrincipalKeys userPrincipalKeys = getPrincipalKeys();
         return this.descriptorService.getAll( WidgetDescriptor.class ).
@@ -38,22 +54,21 @@ public final class WidgetDescriptorServiceImpl
     }
 
     @Override
-    public WidgetDescriptor getByKey( final DescriptorKey descriptorKey )
+    public Descriptors<WidgetDescriptor> getByApplication( final ApplicationKey key )
     {
-        final WidgetDescriptor widgetDescriptor = this.descriptorService.get( WidgetDescriptor.class, descriptorKey );
-        if ( widgetDescriptor != null && widgetDescriptor.isAccessAllowed( getPrincipalKeys() ) )
-        {
-            return widgetDescriptor;
-        }
-        return null;
+        return Descriptors.from( findDescriptorKeys( key ).stream().map( this::getByKey ).collect( Collectors.toList() ) );
     }
 
     @Override
-    public boolean widgetExists( final DescriptorKey descriptorKey )
+    public WidgetDescriptor getByKey( final DescriptorKey descriptorKey )
     {
-        return this.descriptorService.get( WidgetDescriptor.class, descriptorKey ) != null;
+        return this.descriptorService.get( WidgetDescriptor.class, descriptorKey );
     }
 
+    private Set<DescriptorKey> findDescriptorKeys( final ApplicationKey key )
+    {
+        return new DescriptorKeyLocator( this.resourceService, PATH, true ).findKeys( key );
+    }
 
     private PrincipalKeys getPrincipalKeys()
     {
@@ -68,4 +83,11 @@ public final class WidgetDescriptorServiceImpl
     {
         this.descriptorService = descriptorService;
     }
+
+    @Reference
+    public void setResourceService( final ResourceService resourceService )
+    {
+        this.resourceService = resourceService;
+    }
+
 }

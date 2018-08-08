@@ -17,36 +17,82 @@ import com.enonic.xp.script.bean.ScriptBean;
 import com.enonic.xp.script.serializer.MapSerializable;
 import com.enonic.xp.site.Site;
 
+import static java.util.stream.Collectors.toList;
+
 public final class LocaleScriptBean
     implements ScriptBean
 {
     private Supplier<LocaleService> localeService;
 
-    public String localize( final String key, final String locale, final ScriptValue values, final String[] bundles )
+    private ApplicationKey application;
+
+    private final static String NOT_TRANSLATED_MESSAGE = "NOT_TRANSLATED";
+
+    public String localize( final String key, final List<String> locales, final ScriptValue values, String[] bundles )
     {
-        MessageBundle bundle;
-
-        if ( bundles != null && bundles.length > 0 )
+        if ( bundles == null || bundles.length == 0 )
         {
-            bundle = getMessageBundle( locale, bundles);
-        }
-        else {
-            bundle = getMessageBundle( locale, "site/i18n/phrases");
+            bundles = new String[]{"i18n/phrases", "site/i18n/phrases"};
         }
 
-        return bundle.localize( key, toArray( values ) );
+        final String locale = getPreferredLocale( locales, bundles );
+        final MessageBundle bundle = getMessageBundle( locale, bundles );
+
+        if ( bundle == null )
+        {
+            return null;
+        }
+
+        final String localizedMessage = bundle.localize( key, toArray( values ) );
+
+        return localizedMessage != null ? localizedMessage : NOT_TRANSLATED_MESSAGE;
     }
 
-    public MapSerializable getPhrases( final String locale, final String... bundleNames )
+    public MapSerializable getPhrases( final List<String> locales, final String... bundleNames )
     {
+        final String locale = getPreferredLocale( locales, bundleNames );
         return new MapMapper( getMessageBundle( locale, bundleNames ).asMap() );
+    }
+
+    public List<String> getSupportedLocales( final String... bundleNames )
+    {
+        final ApplicationKey applicationKey = getApplication();
+        return this.localeService.get().getLocales( applicationKey, bundleNames ).stream().
+            map( Locale::toLanguageTag ).
+            sorted( String::compareTo ).
+            collect( toList() );
+    }
+
+    private String getPreferredLocale( final List<String> localeTags, final String[] bundleNames )
+    {
+        if ( localeTags == null || localeTags.isEmpty() )
+        {
+            return null;
+        }
+        final ApplicationKey applicationKey = getApplication();
+        final List<Locale> locales = localeTags.stream().map( Locale::forLanguageTag ).collect( toList() );
+        final Locale preferredLocale = this.localeService.get().getSupportedLocale( locales, applicationKey, bundleNames );
+        return preferredLocale == null ? null : preferredLocale.toLanguageTag();
     }
 
     private MessageBundle getMessageBundle( final String locale, final String... bundleNames )
     {
-        final ApplicationKey applicationKey = getRequest().getApplicationKey();
+        final ApplicationKey applicationKey = getApplication();
         final Locale resolvedLocale = resolveLocale( locale );
         return this.localeService.get().getBundle( applicationKey, resolvedLocale, bundleNames );
+    }
+
+    private ApplicationKey getApplication()
+    {
+        if ( this.application != null )
+        {
+            return this.application;
+        }
+        else
+        {
+            final PortalRequest req = getRequest();
+            return req != null ? req.getApplicationKey() : ApplicationKey.from( LocaleScriptBean.class );
+        }
     }
 
     private Locale resolveLocale( final String locale )
@@ -57,6 +103,11 @@ public final class LocaleScriptBean
     private Locale resolveLocaleFromSite()
     {
         final PortalRequest request = getRequest();
+        if ( request == null )
+        {
+            return null;
+        }
+
         final Site site = request.getSite();
 
         if ( site != null )
@@ -80,6 +131,11 @@ public final class LocaleScriptBean
     private String[] toArray( final List<String> value )
     {
         return value.toArray( new String[value.size()] );
+    }
+
+    public void setApplication( final String application )
+    {
+        this.application = application == null ? null : ApplicationKey.from( application );
     }
 
     @Override

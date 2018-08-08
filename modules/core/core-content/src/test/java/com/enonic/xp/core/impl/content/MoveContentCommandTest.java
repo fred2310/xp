@@ -8,7 +8,6 @@ import com.enonic.xp.content.ContentAlreadyMovedException;
 import com.enonic.xp.content.ContentId;
 import com.enonic.xp.content.ContentPath;
 import com.enonic.xp.content.ContentService;
-import com.enonic.xp.content.MoveContentException;
 import com.enonic.xp.content.MoveContentParams;
 import com.enonic.xp.data.PropertyTree;
 import com.enonic.xp.event.EventPublisher;
@@ -17,8 +16,10 @@ import com.enonic.xp.node.NodeId;
 import com.enonic.xp.node.NodeNotFoundException;
 import com.enonic.xp.node.NodePath;
 import com.enonic.xp.node.NodeService;
+import com.enonic.xp.schema.content.ContentType;
 import com.enonic.xp.schema.content.ContentTypeName;
 import com.enonic.xp.schema.content.ContentTypeService;
+import com.enonic.xp.schema.content.GetContentTypeParams;
 import com.enonic.xp.security.PrincipalKey;
 import com.enonic.xp.site.Site;
 
@@ -43,7 +44,10 @@ public class MoveContentCommandTest
 
         ContentId contentId = ContentId.from( "mycontent" );
 
-        MoveContentParams params = new MoveContentParams( contentId, ContentPath.ROOT );
+        MoveContentParams params = MoveContentParams.create().
+            contentId( contentId ).
+            parentContentPath( ContentPath.ROOT ).
+            build();
 
         MoveContentCommand command = MoveContentCommand.create( params ).
             contentTypeService( this.contentTypeService ).
@@ -59,9 +63,8 @@ public class MoveContentCommandTest
         command.execute();
     }
 
-
-    @Test(expected = MoveContentException.class)
-    public void move_fragment_outside_of_site()
+    @Test
+    public void move_fragment_to_the_same_site()
         throws Exception
     {
         final PropertyTree existingContentData = new PropertyTree();
@@ -69,8 +72,12 @@ public class MoveContentCommandTest
 
         final Site parentSite = createSite( existingContentData, ContentPath.ROOT );
         final Content existingContent = createContent( existingContentData, parentSite.getPath(), ContentTypeName.fragment() );
+        final Content existingFolder = createContent( existingContentData, parentSite.getPath(), ContentTypeName.folder() );
 
-        final MoveContentParams params = new MoveContentParams( existingContent.getId(), ContentPath.ROOT );
+        MoveContentParams params = MoveContentParams.create().
+            contentId( existingContent.getId() ).
+            parentContentPath( existingFolder.getPath() ).
+            build();
 
         final MoveContentCommand command = MoveContentCommand.create( params ).
             contentTypeService( this.contentTypeService ).
@@ -83,12 +90,27 @@ public class MoveContentCommandTest
         final Node mockNode = Node.create().parentPath( NodePath.ROOT ).build();
 
         Mockito.when( nodeService.getById( NodeId.from( existingContent.getId() ) ) ).thenReturn( mockNode );
+
+        Mockito.when( nodeService.move( Mockito.any( NodeId.class ), Mockito.any(), Mockito.any() ) ).thenReturn( mockNode );
+
         Mockito.when( translator.fromNode( mockNode, true ) ).thenReturn( existingContent );
         Mockito.when( translator.fromNode( mockNode, false ) ).thenReturn( existingContent );
+
+        Mockito.when( contentService.getByPath( existingFolder.getPath() ) ).thenReturn( existingFolder );
         Mockito.when( contentService.getNearestSite( existingContent.getId() ) ).thenReturn( parentSite );
+
+        final ContentType contentType = ContentType.create().
+            name( "folder" ).
+            displayName( "folder" ).
+            setBuiltIn().setFinal( false ).setAbstract( false ).build();
+
+        Mockito.when( contentTypeService.getByName( new GetContentTypeParams().contentTypeName( existingFolder.getType() ) ) ).thenReturn(
+            contentType );
 
         // exercise
         command.execute();
+        Mockito.verify( nodeService, Mockito.times( 1 ) ).move( Mockito.any( NodeId.class ), Mockito.any(), Mockito.any() );
+
     }
 
     @Test(expected = ContentAlreadyMovedException.class)
@@ -100,7 +122,10 @@ public class MoveContentCommandTest
 
         final Content existingContent = createContent( existingContentData, ContentPath.ROOT, ContentTypeName.folder() );
 
-        final MoveContentParams params = new MoveContentParams( existingContent.getId(), ContentPath.ROOT );
+        final MoveContentParams params = MoveContentParams.create().
+            contentId( existingContent.getId() ).
+            parentContentPath( ContentPath.ROOT ).
+            build();
 
         final MoveContentCommand command = MoveContentCommand.create( params ).
             contentTypeService( this.contentTypeService ).
@@ -110,8 +135,8 @@ public class MoveContentCommandTest
             eventPublisher( this.eventPublisher ).
             build();
 
-        final Node mockNode =
-            Node.create().parentPath( ContentNodeHelper.translateContentParentToNodeParentPath( existingContent.getParentPath() ) ).build();
+        final Node mockNode = Node.create().name( existingContent.getName().toString() ).parentPath(
+            ContentNodeHelper.translateContentParentToNodeParentPath( existingContent.getParentPath() ) ).build();
 
         Mockito.when( nodeService.getById( NodeId.from( existingContent.getId() ) ) ).thenReturn( mockNode );
         Mockito.when( translator.fromNode( mockNode, true ) ).thenReturn( existingContent );

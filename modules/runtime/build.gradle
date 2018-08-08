@@ -7,10 +7,6 @@ configurations {
     toolbox
 }
 
-configurations.all {
-    resolutionStrategy.cacheChangingModulesFor 0, 'seconds'
-}
-
 dependencies {
     lib project( ':launcher:launcher-main' )
     toolbox project( ':tools:toolbox' )
@@ -55,6 +51,10 @@ addBundle( project( ':repack:repack-elasticsearch' ), 8 )
 addBundle( project( ':repack:repack-resteasy' ), 8 )
 addBundle( project( ':repack:repack-attoparser' ), 8 )
 addBundle( project( ':repack:repack-okhttp' ), 8 )
+addBundle( project( ':repack:repack-javax-cache-api' ), 8 )
+addBundle( 'org.apache.ignite:ignite-core:2.3.0', 8 )
+addBundle( 'org.apache.ignite:ignite-osgi:2.3.0', 8 )
+addBundle( 'org.apache.ignite:ignite-web:2.3.0', 8 )
 addBundle( 'io.purplejs:purplejs-core:1.0.0-SNAPSHOT', 8 )
 
 // API bundles
@@ -74,6 +74,7 @@ addBundle( project( ':core:core-image' ), 22 )
 addBundle( project( ':core:core-export' ), 22 )
 addBundle( project( ':core:core-mail' ), 22 )
 addBundle( project( ':core:core-elasticsearch' ), 22 )
+addBundle( project( ':core:core-ignite' ), 22 )
 addBundle( project( ':core:core-content' ), 22 )
 addBundle( project( ':core:core-site' ), 22 )
 addBundle( project( ':core:core-i18n' ), 22 )
@@ -85,10 +86,11 @@ addBundle( project( ':core:core-extractor' ), 22 )
 addBundle( project( ':core:core-auth' ), 22 )
 addBundle( project( ':core:core-macro' ), 22 )
 addBundle( project( ':core:core-task' ), 22 )
+addBundle( project( ':core:core-cluster' ), 23 )
 
 // Server bundles
 addBundle( project( ':server:server-config' ), 12 )
-addBundle( project( ':server:server-deploy' ), 30 )
+addBundle( project( ':server:server-deploy' ), 32 )
 addBundle( project( ':server:server-shell' ), 17 )
 addBundle( project( ':server:server-status' ), 17 )
 addBundle( project( ':server:server-udc' ), 17 )
@@ -105,6 +107,7 @@ addBundle( project( ':web:web-impl' ), 26 )
 addBundle( project( ':web:web-vhost' ), 26 )
 addBundle( project( ':web:web-dos' ), 26 )
 addBundle( project( ':web:web-dispatch' ), 26 )
+addBundle( project( ':web:web-session' ), 26 )
 
 // JaxRs app
 addBundle( project( ':jaxrs:jaxrs-impl' ), 28 )
@@ -119,6 +122,9 @@ addBundle( project( ':admin:admin-impl' ), 30 )
 
 // BlobStore providers
 addBundle( project( ':blobstore:blobstore-file' ), 22 )
+
+// Applications
+addBundle( project( ':app:app-system' ), 32 )
 
 def addBundle( dep, level )
 {
@@ -242,3 +248,12 @@ task run( type: Exec, dependsOn: 'installDist' ) {
         }
     }
 }
+
+publishing.publications {
+    mavenJava(MavenPublication) {
+        artifact distZip
+    }
+}
+task install(dependsOn: publishToMavenLocal)
+
+

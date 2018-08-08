@@ -7,6 +7,7 @@ import com.google.common.base.Preconditions;
 import com.enonic.xp.context.ContextAccessor;
 import com.enonic.xp.node.InsertManualStrategy;
 import com.enonic.xp.node.MoveNodeException;
+import com.enonic.xp.node.MoveNodeListener;
 import com.enonic.xp.node.MoveNodeResult;
 import com.enonic.xp.node.Node;
 import com.enonic.xp.node.NodeAlreadyExistAtPathException;
@@ -36,12 +37,15 @@ public class MoveNodeCommand
 
     private final NodeName newNodeName;
 
+    private final MoveNodeListener moveListener;
+
     private MoveNodeCommand( final Builder builder )
     {
         super( builder );
         this.nodeId = builder.id;
         this.newParentPath = builder.newParentPath;
         this.newNodeName = builder.newNodeName;
+        this.moveListener = builder.moveListener;
     }
 
     public static Builder create()
@@ -79,7 +83,7 @@ public class MoveNodeCommand
                 build();
         }
 
-        checkNotMovedToSelfOrChild( existingNode, newParentPath );
+        checkNotMovedToSelfOrChild( existingNode, newParentPath, newNodeName );
 
         checkContextUserPermissionOrAdmin( existingNode, newParentPath );
 
@@ -142,11 +146,12 @@ public class MoveNodeCommand
         return newNodeName;
     }
 
-    private void checkNotMovedToSelfOrChild( final Node existingNode, final NodePath newParentPath )
+    private void checkNotMovedToSelfOrChild( final Node existingNode, final NodePath newParentPath, final NodeName newNodeName )
     {
         if ( newParentPath.equals( existingNode.path() ) || newParentPath.getParentPaths().contains( existingNode.path() ) )
         {
-            throw new MoveNodeException( "Not allowed to move content to itself (" + newParentPath + ")" );
+            throw new MoveNodeException( "Not allowed to move content to itself (" + newParentPath + ")",
+                                         new NodePath( newParentPath, newNodeName ) );
         }
     }
 
@@ -197,6 +202,8 @@ public class MoveNodeCommand
         {
             movedNode = doStore( nodeToMoveBuilder.build(), true );
         }
+
+        nodeMoved( 1 );
 
         for ( final NodeBranchEntry nodeBranchEntry : nodeBranchEntries )
         {
@@ -255,6 +262,14 @@ public class MoveNodeCommand
         return NodeName.from( nodeBranchEntry.getNodePath().getLastElement().toString() );
     }
 
+    private void nodeMoved( final int count )
+    {
+        if ( moveListener != null )
+        {
+            moveListener.nodesMoved( count );
+        }
+    }
+
     private void verifyNoExistingAtNewPath( final NodePath newParentPath, final NodeName newNodeName )
     {
         final NodePath newNodePath = NodePath.create( newParentPath, newNodeName.toString() ).build();
@@ -266,7 +281,7 @@ public class MoveNodeCommand
 
         if ( exists )
         {
-            throw new NodeAlreadyExistAtPathException( newParentPath );
+            throw new NodeAlreadyExistAtPathException( new NodePath( newParentPath, newNodeName ) );
         }
     }
 
@@ -278,6 +293,8 @@ public class MoveNodeCommand
         private NodePath newParentPath;
 
         private NodeName newNodeName;
+
+        private MoveNodeListener moveListener;
 
         private Builder()
         {
@@ -304,6 +321,12 @@ public class MoveNodeCommand
         public Builder newNodeName( final NodeName nodeName )
         {
             this.newNodeName = nodeName;
+            return this;
+        }
+
+        public Builder moveListener( final MoveNodeListener moveListener )
+        {
+            this.moveListener = moveListener;
             return this;
         }
 

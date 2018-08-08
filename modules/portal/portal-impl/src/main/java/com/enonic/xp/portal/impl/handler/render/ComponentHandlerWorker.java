@@ -1,16 +1,25 @@
 package com.enonic.xp.portal.impl.handler.render;
 
+import java.util.ArrayList;
+import java.util.List;
+
+import com.google.common.collect.ImmutableList;
+
 import com.enonic.xp.content.Content;
+import com.enonic.xp.content.ContentId;
+import com.enonic.xp.content.ContentNotFoundException;
 import com.enonic.xp.page.DescriptorKey;
 import com.enonic.xp.page.Page;
 import com.enonic.xp.page.PageTemplate;
 import com.enonic.xp.portal.PortalRequest;
 import com.enonic.xp.portal.PortalResponse;
+import com.enonic.xp.portal.impl.rendering.FragmentPageResolver;
 import com.enonic.xp.portal.impl.rendering.Renderer;
 import com.enonic.xp.portal.impl.rendering.RendererFactory;
 import com.enonic.xp.portal.postprocess.PostProcessor;
 import com.enonic.xp.region.Component;
 import com.enonic.xp.region.ComponentPath;
+import com.enonic.xp.region.FragmentComponent;
 import com.enonic.xp.region.LayoutComponent;
 import com.enonic.xp.site.Site;
 import com.enonic.xp.trace.Trace;
@@ -82,19 +91,22 @@ final class ComponentHandlerWorker
             pageController = pageTemplate.getController();
         }
 
-        final Page effectivePage = new EffectivePageResolver( content, pageTemplate ).resolve();
-        final Content effectiveContent = Content.create( content ).
-            page( effectivePage ).
-            build();
+        Page effectivePage = new EffectivePageResolver( content, pageTemplate ).resolve();
 
         if ( component == null )
         {
-            component = effectiveContent.getPage().getRegions().getComponent( this.componentPath );
+            effectivePage = inlineFragments( effectivePage, this.componentPath );
+            component = effectivePage.getRegions().getComponent( this.componentPath );
         }
+
         if ( component == null )
         {
             throw notFound( "Page component for [%s] not found", this.componentPath );
         }
+
+        final Content effectiveContent = Content.create( content ).
+            page( effectivePage ).
+            build();
 
         this.request.setSite( site );
         this.request.setContent( effectiveContent );
@@ -113,4 +125,59 @@ final class ComponentHandlerWorker
         final PortalResponse response = renderer.render( component, this.request );
         return this.postProcessor.processResponseInstructions( this.request, response );
     }
+
+    private Page inlineFragments( Page page, final ComponentPath componentPath )
+    {
+        // traverse page based on componentPath, inline fragments components if found
+        final List<ComponentPath.RegionAndComponent> partialComponentPathParts = new ArrayList<>();
+
+        for ( ComponentPath.RegionAndComponent pathPart : componentPath )
+        {
+            partialComponentPathParts.add( pathPart );
+            final ComponentPath path = new ComponentPath( ImmutableList.copyOf( partialComponentPathParts ) );
+            final Component component = page.getRegions().getComponent( path );
+
+            if ( component == null )
+            {
+                break;
+            }
+
+            if ( component instanceof FragmentComponent )
+            {
+                final FragmentComponent fragment = (FragmentComponent) component;
+                final Component fragmentComponent = getFragmentComponent( fragment );
+                if ( fragmentComponent == null )
+                {
+                    break;
+                }
+                page = new FragmentPageResolver().inlineFragmentInPage( page, fragmentComponent, path );
+            }
+        }
+        return page;
+    }
+
+    private Component getFragmentComponent( final FragmentComponent component )
+    {
+        final ContentId contentId = component.getFragment();
+        if ( contentId == null )
+        {
+            return null;
+        }
+
+        try
+        {
+            final Content fragmentContent = contentService.getById( contentId );
+            if ( !fragmentContent.hasPage() || !fragmentContent.getType().isFragment() )
+            {
+                return null;
+            }
+            final Page page = fragmentContent.getPage();
+            return page.getFragment();
+        }
+        catch ( ContentNotFoundException e )
+        {
+            return null;
+        }
+    }
+
 }

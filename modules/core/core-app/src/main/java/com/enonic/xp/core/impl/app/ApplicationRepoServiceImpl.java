@@ -19,6 +19,7 @@ import com.enonic.xp.node.NodeNotFoundException;
 import com.enonic.xp.node.NodePath;
 import com.enonic.xp.node.NodeService;
 import com.enonic.xp.node.Nodes;
+import com.enonic.xp.node.RefreshMode;
 import com.enonic.xp.node.UpdateNodeParams;
 import com.enonic.xp.util.BinaryReference;
 
@@ -36,10 +37,11 @@ public class ApplicationRepoServiceImpl
     @Activate
     public void initialize( final BundleContext context )
     {
-        if ( indexService.isMaster() )
-        {
-            new ApplicationRepoInitializer( this.nodeService ).initialize();
-        }
+        ApplicationRepoInitializer.create().
+            setIndexService( indexService ).
+            setNodeService( nodeService ).
+            build().
+            initialize();
     }
 
     public Node createApplicationNode( final Application application, final ByteSource source )
@@ -86,6 +88,8 @@ public class ApplicationRepoServiceImpl
     @Override
     public Nodes getApplications()
     {
+        this.nodeService.refresh( RefreshMode.ALL );
+
         final FindNodesByParentResult byParent =
             ApplicationHelper.runAsAdmin( () -> this.nodeService.findByParent( FindNodesByParentParams.create().
                 parentPath( APPLICATION_PATH ).

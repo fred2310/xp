@@ -3,6 +3,7 @@ package com.enonic.xp.lib.portal.url;
 import java.util.Map;
 
 import com.google.common.collect.HashMultimap;
+import com.google.common.collect.Maps;
 import com.google.common.collect.Multimap;
 
 import com.enonic.xp.portal.PortalRequest;
@@ -23,6 +24,11 @@ public abstract class AbstractUrlHandler
 
     public final String createUrl( final ScriptValue params )
     {
+        if ( params == null )
+        {
+            return createUrl( Maps.newHashMap() );
+        }
+
         return createUrl( params.getMap() );
     }
 
@@ -42,7 +48,7 @@ public abstract class AbstractUrlHandler
             {
                 applyParams( map, param.getValue() );
             }
-            else
+            else if ( this.isValidParam( key ) )
             {
                 applyParam( map, "_" + key, param.getValue() );
             }
@@ -87,6 +93,8 @@ public abstract class AbstractUrlHandler
             params.put( key, value.toString() );
         }
     }
+
+    protected abstract boolean isValidParam( String param );
 
     @Override
     public void initialize( final BeanContext context )

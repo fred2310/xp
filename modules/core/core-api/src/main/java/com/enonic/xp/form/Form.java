@@ -31,8 +31,10 @@ public final class Form
                 this.formItems.add( formItem );
             }
         }
+        FormValidator.validate( this );
     }
 
+    @Deprecated
     public void addFormItem( final FormItem formItem )
     {
         this.formItems.add( formItem );
@@ -66,6 +68,11 @@ public final class Form
     public Input getInput( final FormItemPath path )
     {
         return formItems.getInput( path );
+    }
+
+    public Input getInput( final FormItemPath path, final boolean skipLayout )
+    {
+        return formItems.getInput( path, skipLayout );
     }
 
     public InlineMixin getInlineMixin( final String path )

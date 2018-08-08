@@ -7,12 +7,11 @@ import com.enonic.xp.data.PropertyTree;
 import com.enonic.xp.data.ValueTypes;
 import com.enonic.xp.node.AttachedBinary;
 import com.enonic.xp.node.CreateNodeParams;
-import com.enonic.xp.node.DuplicateNodeProcessor;
+import com.enonic.xp.node.DuplicateNodeParams;
 import com.enonic.xp.node.FindNodesByParentParams;
 import com.enonic.xp.node.FindNodesByParentResult;
 import com.enonic.xp.node.InsertManualStrategy;
 import com.enonic.xp.node.Node;
-import com.enonic.xp.node.NodeId;
 import com.enonic.xp.node.NodeNotFoundException;
 import com.enonic.xp.node.NodePath;
 import com.enonic.xp.node.Nodes;
@@ -26,18 +25,15 @@ import com.enonic.xp.util.Reference;
 public final class DuplicateNodeCommand
     extends AbstractNodeCommand
 {
-    private final NodeId nodeId;
+    private final DuplicateNodeParams params;
 
     private final BinaryService binaryService;
-
-    private final DuplicateNodeProcessor processor;
 
     private DuplicateNodeCommand( final Builder builder )
     {
         super( builder );
-        this.nodeId = builder.id;
+        this.params = builder.params;
         this.binaryService = builder.binaryService;
-        this.processor = builder.processor;
     }
 
     public static Builder create()
@@ -47,11 +43,11 @@ public final class DuplicateNodeCommand
 
     public Node execute()
     {
-        final Node existingNode = doGetById( nodeId );
+        final Node existingNode = doGetById( params.getNodeId() );
 
         if ( existingNode == null )
         {
-            throw new NodeNotFoundException( "cannot duplicate node with id [" + nodeId + "]" );
+            throw new NodeNotFoundException( "Cannot duplicate node with id [" + params.getNodeId() + "]" );
         }
 
         if ( existingNode.isRoot() )
@@ -74,10 +70,15 @@ public final class DuplicateNodeCommand
             build().
             execute();
 
+        nodeDuplicated( 1 );
+
         final NodeReferenceUpdatesHolder.Builder builder = NodeReferenceUpdatesHolder.create().
             add( existingNode.id(), duplicatedNode.id() );
 
-        storeChildNodes( existingNode, duplicatedNode, builder );
+        if ( params.getIncludeChildren() )
+        {
+            storeChildNodes( existingNode, duplicatedNode, builder );
+        }
 
         final NodeReferenceUpdatesHolder nodesToBeUpdated = builder.build();
 
@@ -95,9 +96,9 @@ public final class DuplicateNodeCommand
 
     private CreateNodeParams executeProcessors( final CreateNodeParams originalParams )
     {
-        if ( this.processor != null )
+        if ( params.getProcessor() != null )
         {
-            return processor.process( originalParams );
+            return params.getProcessor().process( originalParams );
         }
 
         return originalParams;
@@ -138,6 +139,8 @@ public final class DuplicateNodeCommand
             builder.add( node.id(), newChildNode.id() );
 
             storeChildNodes( node, newChildNode, builder );
+
+            nodeDuplicated( 1 );
         }
     }
 
@@ -236,23 +239,35 @@ public final class DuplicateNodeCommand
         return newNodeName;
     }
 
+    private void nodeDuplicated( final int count )
+    {
+        if ( params.getDuplicateListener() != null )
+        {
+            params.getDuplicateListener().nodesDuplicated( count );
+        }
+    }
+
     public static class Builder
         extends AbstractNodeCommand.Builder<Builder>
     {
-        private NodeId id;
-
         private BinaryService binaryService;
 
-        private DuplicateNodeProcessor processor;
+        private DuplicateNodeParams params;
 
         Builder()
         {
             super();
         }
 
-        public Builder id( final NodeId nodeId )
+        public Builder params( final DuplicateNodeParams params )
         {
-            this.id = nodeId;
+            this.params = params;
+            return this;
+        }
+
+        public Builder binaryService( final BinaryService binaryService )
+        {
+            this.binaryService = binaryService;
             return this;
         }
 
@@ -262,24 +277,11 @@ public final class DuplicateNodeCommand
             return new DuplicateNodeCommand( this );
         }
 
-        public Builder binaryService( final BinaryService binaryService )
-        {
-            this.binaryService = binaryService;
-            return this;
-        }
-
-        public Builder processor( final DuplicateNodeProcessor processor )
-        {
-            this.processor = processor;
-            return this;
-        }
-
-
         @Override
         void validate()
         {
             super.validate();
-            Preconditions.checkNotNull( this.id );
+            Preconditions.checkNotNull( this.params.getNodeId() );
             Preconditions.checkNotNull( this.binaryService );
         }
     }

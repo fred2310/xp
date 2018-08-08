@@ -7,12 +7,16 @@ import org.junit.Test;
 import org.mockito.Mockito;
 
 import com.enonic.xp.admin.widget.WidgetDescriptor;
+import com.enonic.xp.app.ApplicationKey;
 import com.enonic.xp.context.Context;
 import com.enonic.xp.context.ContextAccessor;
 import com.enonic.xp.context.ContextBuilder;
 import com.enonic.xp.descriptor.DescriptorService;
 import com.enonic.xp.descriptor.Descriptors;
 import com.enonic.xp.page.DescriptorKey;
+import com.enonic.xp.resource.ResourceKey;
+import com.enonic.xp.resource.ResourceKeys;
+import com.enonic.xp.resource.ResourceService;
 import com.enonic.xp.security.PrincipalKey;
 import com.enonic.xp.security.auth.AuthenticationInfo;
 
@@ -21,6 +25,8 @@ import static org.junit.Assert.*;
 public class WidgetDescriptorServiceTest
 {
     private DescriptorService descriptorService;
+
+    private ResourceService resourceService;
 
     private WidgetDescriptorServiceImpl service;
 
@@ -38,9 +44,11 @@ public class WidgetDescriptorServiceTest
     public void setup()
     {
         this.descriptorService = Mockito.mock( DescriptorService.class );
+        this.resourceService = Mockito.mock( ResourceService.class );
 
         this.service = new WidgetDescriptorServiceImpl();
         this.service.setDescriptorService( this.descriptorService );
+        this.service.setResourceService( this.resourceService );
 
         widgetDescriptor1 = WidgetDescriptor.create().
             key( DescriptorKey.from( "app:a" ) ).
@@ -70,6 +78,7 @@ public class WidgetDescriptorServiceTest
             setAllowedPrincipals( Collections.emptyList() ).
             build();
 
+
         final Descriptors<WidgetDescriptor> widgetDescriptors =
             Descriptors.from( widgetDescriptor1, widgetDescriptor2, widgetDescriptor3, widgetDescriptor4, widgetDescriptor5 );
         Mockito.when( this.descriptorService.getAll( WidgetDescriptor.class ) ).thenReturn( widgetDescriptors );
@@ -78,17 +87,43 @@ public class WidgetDescriptorServiceTest
     }
 
     @Test
+    public void get_by_application()
+        throws Exception
+    {
+        Mockito.when( this.resourceService.findFiles( ApplicationKey.from( "app" ), "/admin/widgets/.+\\.(xml|js)" ) ).thenReturn(
+            ResourceKeys.from( ResourceKey.from( "app:admin/widgets/d/d.xml" ), ResourceKey.from( "app:admin/widgets/c/c.xml" ) ) );
+
+        final Descriptors<WidgetDescriptor> result = this.service.getByApplication( ApplicationKey.from( "app" ) );
+
+        assertEquals( 2, result.getSize() );
+        assertTrue( result.contains( widgetDescriptor3 ) );
+        assertTrue( result.contains( widgetDescriptor4 ) );
+    }
+
+    @Test
     public void get_by_interfaces()
         throws Exception
     {
         final Descriptors<WidgetDescriptor> result = this.service.getByInterfaces( "com.enonic.xp.my-interface" );
+        assertEquals( 4, result.getSize() );
+        assertTrue( result.contains( widgetDescriptor1 ) );
+        assertTrue( result.contains( widgetDescriptor3 ) );
+        assertTrue( result.contains( widgetDescriptor4 ) );
+        assertTrue( result.contains( widgetDescriptor5 ) );
+    }
+
+    @Test
+    public void get_allowed_by_interfaces()
+        throws Exception
+    {
+        final Descriptors<WidgetDescriptor> result = this.service.getAllowedByInterfaces( "com.enonic.xp.my-interface" );
         assertEquals( 2, result.getSize() );
         assertTrue( result.contains( widgetDescriptor1 ) );
         assertTrue( result.contains( widgetDescriptor4 ) );
     }
 
     @Test
-    public void get_by_interfaces_as_admin()
+    public void get_allowed_by_interfaces_as_admin()
         throws Exception
     {
         final AuthenticationInfo authenticationInfo = AuthenticationInfo.copyOf( ContextAccessor.current().getAuthInfo() ).
@@ -99,7 +134,7 @@ public class WidgetDescriptorServiceTest
             authInfo( authenticationInfo ).build();
 
         adminContext.runWith( () -> {
-            final Descriptors<WidgetDescriptor> result = this.service.getByInterfaces( "com.enonic.xp.my-interface" );
+            final Descriptors<WidgetDescriptor> result = this.service.getAllowedByInterfaces( "com.enonic.xp.my-interface" );
             assertEquals( 4, result.getSize() );
             assertTrue( result.contains( widgetDescriptor1 ) );
             assertTrue( result.contains( widgetDescriptor3 ) );
@@ -112,22 +147,10 @@ public class WidgetDescriptorServiceTest
     public void get_by_key()
         throws Exception
     {
-        final WidgetDescriptor forbiddenWidget = this.service.getByKey( DescriptorKey.from( "app:c" ) );
-        assertNull( forbiddenWidget );
-
         final WidgetDescriptor allowedWidget = this.service.getByKey( DescriptorKey.from( "app:d" ) );
         assertTrue( allowedWidget == widgetDescriptor4 );
 
         final WidgetDescriptor unknownWidget = this.service.getByKey( DescriptorKey.from( "app:unknown" ) );
         assertNull( unknownWidget );
-    }
-
-    @Test
-    public void widget_exists()
-        throws Exception
-    {
-        assertTrue( this.service.widgetExists( DescriptorKey.from( "app:c" ) ) );
-        assertTrue( this.service.widgetExists( DescriptorKey.from( "app:d" ) ) );
-        assertFalse( this.service.widgetExists( DescriptorKey.from( "app:unknown" ) ) );
     }
 }

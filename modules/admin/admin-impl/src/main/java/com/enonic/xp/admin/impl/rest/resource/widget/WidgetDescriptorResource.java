@@ -11,8 +11,6 @@ import javax.ws.rs.core.MediaType;
 import org.osgi.service.component.annotations.Component;
 import org.osgi.service.component.annotations.Reference;
 
-import com.google.common.collect.ImmutableSet;
-
 import com.enonic.xp.admin.impl.rest.resource.ResourceConstants;
 import com.enonic.xp.admin.impl.rest.resource.widget.json.WidgetDescriptorJson;
 import com.enonic.xp.admin.widget.WidgetDescriptor;
@@ -36,7 +34,7 @@ public class WidgetDescriptorResource
     @Path("list/byinterfaces")
     public List<WidgetDescriptorJson> getByInterfaces( final String[] widgetInterfaces )
     {
-        final Descriptors<WidgetDescriptor> widgetDescriptors = this.widgetDescriptorService.getByInterfaces( widgetInterfaces );
+        final Descriptors<WidgetDescriptor> widgetDescriptors = this.widgetDescriptorService.getAllowedByInterfaces( widgetInterfaces );
         return widgetDescriptorsToJsonList( widgetDescriptors );
     }
 
@@ -48,17 +46,6 @@ public class WidgetDescriptorResource
 
     private List<WidgetDescriptorJson> widgetDescriptorsToJsonList( final Descriptors<WidgetDescriptor> descriptors )
     {
-        return descriptors.stream().map( this::mapWidgetDescriptorToJson ).collect( toList() );
-    }
-
-    private WidgetDescriptorJson mapWidgetDescriptorToJson( final WidgetDescriptor widgetDescriptor )
-    {
-        final WidgetDescriptorJson jsonEntry = new WidgetDescriptorJson();
-        jsonEntry.key = widgetDescriptor.getKeyString();
-        jsonEntry.displayName = widgetDescriptor.getDisplayName();
-        jsonEntry.url = widgetDescriptor.getUrl();
-        jsonEntry.interfaces = ImmutableSet.copyOf( widgetDescriptor.getInterfaces() );
-        jsonEntry.config = widgetDescriptor.getConfig();
-        return jsonEntry;
+        return descriptors.stream().map( WidgetDescriptorJson::new ).collect( toList() );
     }
 }

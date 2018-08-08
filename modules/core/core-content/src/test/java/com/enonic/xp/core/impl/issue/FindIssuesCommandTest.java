@@ -4,6 +4,7 @@ import org.junit.Before;
 import org.junit.Test;
 import org.mockito.Mockito;
 
+import com.enonic.xp.content.ContentIds;
 import com.enonic.xp.issue.FindIssuesResult;
 import com.enonic.xp.issue.IssueQuery;
 import com.enonic.xp.issue.IssueStatus;
@@ -35,7 +36,8 @@ public class FindIssuesCommandTest
 
         Mockito.when( nodeService.findByQuery( Mockito.any( NodeQuery.class ) ) ).thenReturn(
             FindNodesByQueryResult.create().hits( 20 ).totalHits( 40 ).build() );
-        Mockito.when( nodeService.getByIds( Mockito.any( NodeIds.class ) ) ).thenReturn( Nodes.empty() );
+        Mockito.when( nodeService.getByIds( Mockito.any( NodeIds.class ) ) ).thenReturn(
+            Nodes.from( IssueNodeTranslatorTest.createNode() ) );
 
         FindIssuesResult result = command.execute();
 
@@ -44,7 +46,29 @@ public class FindIssuesCommandTest
 
         assertEquals( 20, result.getHits() );
         assertEquals( 40, result.getTotalHits() );
-        assertTrue( result.getIssues().isEmpty() );
+        assertEquals( 1, result.getIssues().size() );
+    }
+
+    @Test
+    public void testFindIssuesByItems()
+        throws Exception
+    {
+        final IssueQuery issueQuery =
+            IssueQuery.create().from( 0 ).size( 20 ).status( IssueStatus.OPEN ).items( ContentIds.from( "content-id" ) ).build();
+        final FindIssuesCommand command = createCommand( issueQuery );
+
+        Mockito.when( nodeService.findByQuery( Mockito.any( NodeQuery.class ) ) ).thenReturn(
+            FindNodesByQueryResult.create().hits( 20 ).totalHits( 40 ).build() );
+        Mockito.when( nodeService.getByIds( Mockito.any( NodeIds.class ) ) ).thenReturn( Nodes.from( IssueNodeTranslatorTest.createNode() ) );
+
+        FindIssuesResult result = command.execute();
+
+        Mockito.verify( nodeService, Mockito.times( 1 ) ).findByQuery( Mockito.any( NodeQuery.class ) );
+        Mockito.verify( nodeService, Mockito.times( 1 ) ).getByIds( Mockito.any( NodeIds.class ) );
+
+        assertEquals( 20, result.getHits() );
+        assertEquals( 40, result.getTotalHits() );
+        assertEquals( 1, result.getIssues().size() );
     }
 
     private FindIssuesCommand createCommand( final IssueQuery query )

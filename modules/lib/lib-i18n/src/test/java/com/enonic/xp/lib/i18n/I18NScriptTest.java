@@ -1,9 +1,12 @@
 package com.enonic.xp.lib.i18n;
 
 import java.util.Arrays;
+import java.util.LinkedHashSet;
 import java.util.Locale;
 import java.util.Map;
+import java.util.Set;
 
+import org.mockito.Matchers;
 import org.mockito.Mockito;
 import org.mockito.invocation.InvocationOnMock;
 import org.mockito.stubbing.Answer;
@@ -17,6 +20,8 @@ import com.enonic.xp.i18n.LocaleService;
 import com.enonic.xp.i18n.MessageBundle;
 import com.enonic.xp.site.Site;
 import com.enonic.xp.testing.ScriptRunnerSupport;
+
+import static org.mockito.Matchers.any;
 
 public class I18NScriptTest
     extends ScriptRunnerSupport
@@ -35,10 +40,16 @@ public class I18NScriptTest
 
         final LocaleService localeService = Mockito.mock( LocaleService.class );
 
+        final Set<Locale> locales = new LinkedHashSet<>();
+        locales.add( new Locale( "en" ) );
+        locales.add( new Locale( "es" ) );
+        locales.add( new Locale( "ca" ) );
+        Mockito.when( localeService.getLocales( any( ApplicationKey.class ), any( String[].class ) ) ).thenReturn( locales );
+
         final MessageBundle bundle = Mockito.mock( MessageBundle.class, (Answer) this::answer );
         Mockito.when(
-            localeService.getBundle( Mockito.any( ApplicationKey.class ), Mockito.any( Locale.class ), Mockito.any( String[].class ) ) ).
-            thenAnswer( mock -> bundle );
+            localeService.getBundle( Mockito.any( ApplicationKey.class ), Mockito.any( Locale.class ), Matchers.<String>anyVararg() ) ).
+            thenReturn( bundle );
 
         addService( LocaleService.class, localeService );
 

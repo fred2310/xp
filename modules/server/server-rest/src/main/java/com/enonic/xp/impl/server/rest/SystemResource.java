@@ -103,17 +103,14 @@ public final class SystemResource
 
     @POST
     @Path("vacuum")
-    public VacuumResultJson vacuum( final SystemDumpRequestJson request )
+    public VacuumResultJson vacuum()
         throws Exception
     {
-        final VacuumResult result = this.vacuumService.vacuum( new VacuumParameters() );
+        final VacuumParameters vacuumParams = VacuumParameters.create().
+            listener( new VacuumProgressLogger() ).
+            build();
+        final VacuumResult result = this.vacuumService.vacuum( vacuumParams );
         return VacuumResultJson.from( result );
-    }
-
-    @Reference
-    public void setVacuumService( final VacuumService vacuumService )
-    {
-        this.vacuumService = vacuumService;
     }
 
     private boolean isExport( final SystemLoadRequestJson request )
@@ -145,7 +142,6 @@ public final class SystemResource
     private SystemLoadResultJson doLoadFromSystemDump( final SystemLoadRequestJson request )
     {
         final SystemLoadResult systemLoadResult = this.dumpService.load( SystemLoadParams.create().
-            dumpName( request.getName() ).
             dumpName( request.getName() ).
             includeVersions( true ).
             build() );
@@ -260,5 +256,13 @@ public final class SystemResource
     {
         this.dumpService = dumpService;
     }
+
+    @SuppressWarnings("WeakerAccess")
+    @Reference
+    public void setVacuumService( final VacuumService vacuumService )
+    {
+        this.vacuumService = vacuumService;
+    }
+
 
 }
