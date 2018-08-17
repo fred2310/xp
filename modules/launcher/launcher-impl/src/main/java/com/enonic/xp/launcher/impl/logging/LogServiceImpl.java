@@ -67,4 +67,34 @@ final class LogServiceImpl
     {
         log( level, message, cause );
     }
+
+    @Override
+    public org.osgi.service.log.Logger getLogger( final String name )
+    {
+        return null;
+    }
+
+    @Override
+    public org.osgi.service.log.Logger getLogger( final Class<?> clazz )
+    {
+        return null;
+    }
+
+    @Override
+    public <L extends org.osgi.service.log.Logger> L getLogger( final String name, final Class<L> loggerType )
+    {
+        return null;
+    }
+
+    @Override
+    public <L extends org.osgi.service.log.Logger> L getLogger( final Class<?> clazz, final Class<L> loggerType )
+    {
+        return null;
+    }
+
+    @Override
+    public <L extends org.osgi.service.log.Logger> L getLogger( final Bundle bundle, final String name, final Class<L> loggerType )
+    {
+        return null;
+    }
 }
