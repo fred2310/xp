@@ -29,6 +29,8 @@ addBundle( 'org.apache.felix:org.apache.felix.scr:2.0.2', 5 )
 addBundle( 'org.bouncycastle:bcprov-jdk15on:1.54', 6 )
 
 // Library dependencies
+addBundle( 'org.slf4j:slf4j-simple:1.7.25', 8 )
+addBundle( 'org.slf4j:slf4j-api:1.7.25', 8 )
 addBundle( 'com.google.guava:guava:18.0', 8 )
 addBundle( 'commons-lang:commons-lang:2.4', 8 )
 addBundle( 'commons-io:commons-io:2.4', 8 )

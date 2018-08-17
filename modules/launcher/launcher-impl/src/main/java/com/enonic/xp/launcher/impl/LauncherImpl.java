@@ -46,7 +46,7 @@ public final class LauncherImpl
 
     private void checkRequirements()
     {
-        new RequirementChecker( this.systemProperties ).check();
+//        new RequirementChecker( this.systemProperties ).check();
     }
 
     private void resolveEnv()
