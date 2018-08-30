@@ -118,7 +118,7 @@ public class NodeStoreDocumentFactory
     {
         if ( this.node.getTimestamp() != null )
         {
-            builder.add( NodeIndexPath.TIMESTAMP, ValueFactory.newDateTime( this.node.getTimestamp() ), IndexConfig.MINIMAL );
+//            builder.add( NodeIndexPath.TIMESTAMP, ValueFactory.newDateTime( this.node.getTimestamp() ), IndexConfig.MINIMAL );
         }
     }
 

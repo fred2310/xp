@@ -88,7 +88,7 @@ init() {
 }
 
 run() {
-    exec "$JAVACMD" --add-modules java.xml.bind,jdk.scripting.nashorn $JAVA_OPTS -Dxp.install="$XP_INSTALL" -Dfile.encoding=UTF8 $XP_OPTS -classpath "$XP_INSTALL/lib/*" com.enonic.xp.launcher.LauncherMain $ARGS
+    exec "$JAVACMD" --add-modules java.xml.bind,jdk.scripting.nashorn,java.se.ee $JAVA_OPTS -Dxp.install="$XP_INSTALL" -Dfile.encoding=UTF8 $XP_OPTS -Dmapper.allow_dots_in_name=true -classpath "$XP_INSTALL/lib/*" com.enonic.xp.launcher.LauncherMain $ARGS
 }
 
 main() {
