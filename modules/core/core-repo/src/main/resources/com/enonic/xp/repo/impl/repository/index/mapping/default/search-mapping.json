@@ -36,6 +36,30 @@
         }
       },
       {
+        "template_parentpath": {
+          "match": "_parentpath",
+          "mapping": {
+            "type": "string",
+            "store": "no",
+            "index": "analyzed",
+            "analyzer": "keywordlowercase",
+            "include_in_all": false
+          }
+        }
+      },
+      {
+        "template_path2": {
+          "match": "_path",
+          "mapping": {
+            "type": "string",
+            "store": "no",
+            "index": "analyzed",
+            "analyzer": "keywordlowercase",
+            "include_in_all": false
+          }
+        }
+      },
+      {
         "template_ngram": {
           "match": "*._ngram",
           "mapping": {
