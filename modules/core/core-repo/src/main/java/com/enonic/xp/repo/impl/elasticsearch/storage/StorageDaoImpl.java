@@ -121,6 +121,7 @@ public class StorageDaoImpl
                         setType( settings.getStorageType().getName() ).
                         setRefresh( requests.isForceRefresh() ).
                         setId( id ).
+                        setRouting( id ).
                         request();
 
                 this.client.delete( request ).actionGet( requests.getTimeoutAsString() );
