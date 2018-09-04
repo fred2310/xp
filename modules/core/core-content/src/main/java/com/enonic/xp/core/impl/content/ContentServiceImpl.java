@@ -177,10 +177,12 @@ public class ContentServiceImpl
     @Activate
     public void initialize()
     {
-        if ( this.indexService.isMaster() )
-        {
-            new ContentInitializer( this.nodeService, this.repositoryService ).initialize();
-        }
+        ContentInitializer.create().
+            setIndexService( indexService ).
+            setNodeService( nodeService ).
+            setRepositoryService( repositoryService ).
+            build().
+            initialize();
     }
 
     @Override
@@ -693,12 +695,9 @@ public class ContentServiceImpl
             contentTypeService( this.contentTypeService ).
             translator( this.translator ).
             eventPublisher( this.eventPublisher ).
-            contentService( this ).
             duplicateListener( params.getDuplicateContentListener() ).
             build().
             execute();
-//        final Node createdNode = nodeService.duplicate( NodeId.from( params.getContentId() ), new DuplicateContentProcessor() );
-//        return translator.fromNode( createdNode, true );
     }
 
     @Override
@@ -959,11 +958,17 @@ public class ContentServiceImpl
         final Context context = ContextAccessor.current();
 
         return CompletableFuture.supplyAsync( () -> {
-            // set current context as background thread context
-            final Context futureContext = ContextBuilder.from( context ).build();
-
-            return futureContext.callWith( applyPermissionsCommand::execute );
-
+            try
+            {
+                // set current context as background thread context
+                final Context futureContext = ContextBuilder.from( context ).detachSession().build();
+                return futureContext.callWith( applyPermissionsCommand::execute );
+            }
+            catch ( Throwable t )
+            {
+                LOG.warn( "Error applying permissions", t );
+                return 0;
+            }
         }, applyPermissionsExecutor );
     }
 

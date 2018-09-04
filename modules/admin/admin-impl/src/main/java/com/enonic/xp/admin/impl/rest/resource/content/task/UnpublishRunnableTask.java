@@ -65,37 +65,41 @@ public class UnpublishRunnableTask
 
         listener.contentResolved( filteredChildrenIds.getSize() + contentIds.getSize() );
 
-        final UnpublishContentsResult result = this.contentService.unpublishContent( UnpublishContentParams.create().
-            unpublishBranch( ContentConstants.BRANCH_MASTER ).
-            contentIds( contentIds ).
-            includeChildren( params.isIncludeChildren() ).
-            pushListener( listener ).
-            build() );
+        final UnpublishRunnableTaskResult.Builder resultBuilder = UnpublishRunnableTaskResult.create();
 
-        final ContentIds unpublishedContents = result.getUnpublishedContents();
-
-        String contentName = "";
-        if ( unpublishedContents.getSize() == 1 )
+        try
         {
-            contentName = result.getContentName();
+            final UnpublishContentsResult result = this.contentService.unpublishContent( UnpublishContentParams.create().
+                unpublishBranch( ContentConstants.BRANCH_MASTER ).
+                contentIds( contentIds ).
+                includeChildren( params.isIncludeChildren() ).
+                pushListener( listener ).
+                build() );
+
+            final ContentIds unpublishedContents = result.getUnpublishedContents();
+
+            if ( unpublishedContents.getSize() == 1 )
+            {
+                resultBuilder.succeeded( result.getContentPath() );
+            }
+            else
+            {
+                resultBuilder.succeeded( result.getUnpublishedContents() );
+            }
+        }
+        catch ( Exception e )
+        {
+            if ( contentIds.getSize() == 1 )
+            {
+                resultBuilder.failed( contentService.getById( contentIds.first() ).getPath() );
+            }
+            else
+            {
+                resultBuilder.failed( contentIds );
+            }
         }
 
-        progressReporter.info( getMessage( unpublishedContents.getSize(), contentName ) );
-    }
-
-    private String getMessage( final int unpublished, final String contentName )
-    {
-        switch ( unpublished )
-        {
-            case 0:
-                return "Nothing to unpublish.";
-
-            case 1:
-                return "\"" + contentName + "\" is unpublished.";
-
-            default:
-                return unpublished + " items are unpublished.";
-        }
+        progressReporter.info( resultBuilder.build().toJson() );
     }
 
     public static Builder create()

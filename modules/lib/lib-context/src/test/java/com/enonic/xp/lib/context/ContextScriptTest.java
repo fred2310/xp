@@ -6,7 +6,6 @@ import com.enonic.xp.security.PrincipalKey;
 import com.enonic.xp.security.RoleKeys;
 import com.enonic.xp.security.SecurityService;
 import com.enonic.xp.security.User;
-import com.enonic.xp.security.UserStoreKey;
 import com.enonic.xp.security.auth.AuthenticationInfo;
 import com.enonic.xp.testing.ScriptRunnerSupport;
 
@@ -23,9 +22,9 @@ public class ContextScriptTest
         addService( SecurityService.class, securityService );
 
         final User user = User.create().
-            login( "su" ).
+            login( PrincipalKey.ofSuperUser().getId() ).
             displayName( "Super User" ).
-            key( PrincipalKey.ofUser( UserStoreKey.system(), "su" ) ).
+            key( PrincipalKey.ofSuperUser() ).
             build();
         final AuthenticationInfo authInfo = AuthenticationInfo.create().
             user( user ).

@@ -70,7 +70,7 @@ public final class MixinServiceImpl
             return Mixins.empty();
         }
 
-        return Mixins.from( names.stream().map( name -> getByName( name ) ).collect( Collectors.toList() ) );
+        return Mixins.from( names.stream().map( this::getByName ).filter( Objects::nonNull ).collect( Collectors.toList() ) );
     }
 
     private boolean isSystem( final MixinName name )

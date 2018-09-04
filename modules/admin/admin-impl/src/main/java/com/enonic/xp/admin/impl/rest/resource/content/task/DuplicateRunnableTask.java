@@ -1,8 +1,12 @@
 package com.enonic.xp.admin.impl.rest.resource.content.task;
 
+import java.util.stream.Collectors;
+
 import com.enonic.xp.admin.impl.rest.resource.content.DuplicateContentProgressListener;
 import com.enonic.xp.admin.impl.rest.resource.content.json.DuplicateContentJson;
+import com.enonic.xp.admin.impl.rest.resource.content.json.DuplicateContentsJson;
 import com.enonic.xp.admin.impl.rest.resource.content.query.ContentQueryWithChildren;
+import com.enonic.xp.content.Content;
 import com.enonic.xp.content.ContentAlreadyMovedException;
 import com.enonic.xp.content.ContentId;
 import com.enonic.xp.content.ContentIds;
@@ -19,7 +23,7 @@ public class DuplicateRunnableTask
 {
     private final AuthenticationInfo authInfo;
 
-    private final DuplicateContentJson params;
+    private final DuplicateContentsJson params;
 
     private DuplicateRunnableTask( Builder builder )
     {
@@ -31,80 +35,68 @@ public class DuplicateRunnableTask
     @Override
     public void run( final TaskId id, final ProgressReporter progressReporter )
     {
-        final ContentIds contentToDuplicateList = ContentIds.from( params.getContentIds() );
+        final ContentIds contentToDuplicateWithChildrenList = ContentIds.from(
+            params.getContents().stream().filter( DuplicateContentJson::getIncludeChildren ).map(
+                DuplicateContentJson::getContentId ).collect( Collectors.toList() ) );
+
         progressReporter.info( "Duplicating content" );
 
         final DuplicateContentProgressListener listener = new DuplicateContentProgressListener( progressReporter );
 
-        final long childrenIds = ContentQueryWithChildren.create().
+        final int parentIdsCount = params.getContents().size();
+
+        final int childIdsCount = contentToDuplicateWithChildrenList.stream().map( parentId -> ContentQueryWithChildren.create().
             contentService( this.contentService ).
-            contentsIds( contentToDuplicateList ).
+            contentsIds( ContentIds.from( parentId ) ).
             build().
             find().
-            getTotalHits();
-        final int contentIds = contentToDuplicateList.getSize();
+            getTotalHits() ).mapToInt( Long::intValue ).sum();
 
-        listener.setTotal( Math.toIntExact( childrenIds + contentIds ) );
-        int duplicated = 0;
-        int failed = 0;
-        String contentName = "";
-        for ( ContentId contentId : contentToDuplicateList )
+        listener.setTotal( parentIdsCount + childIdsCount );
+
+        final DuplicateRunnableTaskResult.Builder resultBuilder = DuplicateRunnableTaskResult.create();
+        for ( DuplicateContentJson content : params.getContents() )
         {
+
+            final ContentId contentId = ContentId.from( content.getContentId() );
+
             final DuplicateContentParams duplicateContentParams = DuplicateContentParams.create().
                 contentId( contentId ).
                 creator( authInfo.getUser().getKey() ).
                 duplicateContentListener( listener ).
+                includeChildren( content.getIncludeChildren() ).
                 build();
             try
             {
                 final DuplicateContentsResult result = contentService.duplicate( duplicateContentParams );
-
-                contentName = result.getContentName();
-                duplicated++;
-            }
-            catch ( ContentAlreadyMovedException e )
-            {
-                continue;
-            }
-            catch ( final Exception e )
-            {
-                failed++;
-            }
-        }
-
-        progressReporter.info( getMessage( duplicated, failed, contentName ) );
-    }
-
-    private String getMessage( final int duplicated, final int failed, final String contentName )
-    {
-        final int total = duplicated + failed;
-        switch ( total )
-        {
-            case 0:
-                return "The item is already duplicated.";
-
-            case 1:
-                if ( duplicated == 1 )
+                if ( result.getDuplicatedContents().getSize() == 1 )
                 {
-                    return "\"" + contentName + "\" item is duplicated.";
+                    resultBuilder.succeeded( result.getSourceContentPath() );
                 }
                 else
                 {
-                    return "Content could not be duplicated.";
+                    resultBuilder.succeeded( result.getDuplicatedContents() );
                 }
-
-            default:
-                final StringBuilder builder = new StringBuilder();
-                if ( duplicated > 0 )
+            }
+            catch ( ContentAlreadyMovedException e )
+            {
+                resultBuilder.alreadyDuplicated( e.getPath() );
+            }
+            catch ( final Exception e )
+            {
+                try
                 {
-                    builder.append( duplicated ).append( duplicated > 1 ? " items are " : " item is " ).append( "duplicated. " );
+                    final Content item = contentService.getById( contentId );
+                    resultBuilder.failed( item.getPath() );
                 }
-                if ( failed > 0 )
+                catch ( Exception exc )
                 {
-                    builder.append( failed ).append( failed > 1 ? " items " : " item " ).append( "failed to be duplicated. " );
+                    resultBuilder.failed( ContentIds.from( contentId ) );
                 }
-                return builder.toString().trim();
+            }
         }
+
+        progressReporter.info( resultBuilder.build().toJson() );
     }
 
     public static Builder create()
@@ -117,7 +109,7 @@ public class DuplicateRunnableTask
     {
         private AuthenticationInfo authInfo;
 
-        private DuplicateContentJson params;
+        private DuplicateContentsJson params;
 
         public Builder authInfo( AuthenticationInfo authInfo )
         {
@@ -125,7 +117,7 @@ public class DuplicateRunnableTask
             return this;
         }
 
-        public Builder params( DuplicateContentJson params )
+        public Builder params( DuplicateContentsJson params )
         {
             this.params = params;
             return this;

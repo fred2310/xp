@@ -178,12 +178,12 @@ final class BuiltinContentTypes
     private static final Form MEDIA_DEFAULT_FORM = Form.create().
         addFormItem( Input.create().name( ContentPropertyNames.MEDIA ).
             label( "Media" ).
-            label( "media.default.media.label" ).
+            labelI18nKey( "media.default.media.label" ).
             inputType( InputTypeName.MEDIA_UPLOADER ).build() ).
         addFormItem( Input.create().name( "tags" ).
             inputType( InputTypeName.TAG ).
             label( "Tags" ).
-            label( "media.default.tags.label" ).
+            labelI18nKey( "media.default.tags.label" ).
             occurrences( 0, 0 ).
             build() ).
         build();

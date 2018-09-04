@@ -31,7 +31,6 @@ public final class XmlMixinParser
         this.builder.descriptionI18nKey(
             root.getChild( "description" ) != null ? root.getChild( "description" ).getAttribute( "i18n" ) : null );
 
-
         final XmlFormMapper mapper = new XmlFormMapper( this.currentApplication );
         final Form form = mapper.buildForm( root.getChild( "items" ) );
         this.builder.form( form );

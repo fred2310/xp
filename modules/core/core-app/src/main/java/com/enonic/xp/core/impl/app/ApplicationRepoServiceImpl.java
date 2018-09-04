@@ -37,10 +37,11 @@ public class ApplicationRepoServiceImpl
     @Activate
     public void initialize( final BundleContext context )
     {
-        if ( indexService.isMaster() )
-        {
-            new ApplicationRepoInitializer( this.nodeService ).initialize();
-        }
+        ApplicationRepoInitializer.create().
+            setIndexService( indexService ).
+            setNodeService( nodeService ).
+            build().
+            initialize();
     }
 
     public Node createApplicationNode( final Application application, final ByteSource source )

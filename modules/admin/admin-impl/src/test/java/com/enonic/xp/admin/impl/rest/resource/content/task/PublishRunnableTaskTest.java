@@ -52,6 +52,7 @@ public class PublishRunnableTaskTest
         final PublishContentResult result = PublishContentResult.create().
             setPushed( ContentIds.from( contents.get( 0 ).getId() ) ).
             setDeleted( ContentIds.from( contents.get( 1 ).getId() ) ).
+            setDeletedPath( contents.get( 1 ).getPath() ).
             setFailed( ContentIds.from( contents.get( 2 ).getId() ) ).
             build();
 
@@ -62,6 +63,10 @@ public class PublishRunnableTaskTest
 
         Mockito.when( contentService.publish( Mockito.isA( PushContentParams.class ) ) ).thenReturn( result );
 
+        Mockito.when( contentService.getById( Mockito.eq( contents.get( 0 ).getId() ) ) ).thenReturn( contents.get( 0 ) );
+        Mockito.when( contentService.getById( Mockito.eq( contents.get( 1 ).getId() ) ) ).thenReturn( contents.get( 1 ) );
+        Mockito.when( contentService.getById( Mockito.eq( contents.get( 2 ).getId() ) ) ).thenReturn( contents.get( 2 ) );
+
         final PublishRunnableTask task = createAndRunTask();
         task.createTaskResult();
 
@@ -70,7 +75,9 @@ public class PublishRunnableTaskTest
 
         final String resultMessage = contentQueryArgumentCaptor.getAllValues().get( 1 );
 
-        Assert.assertEquals( "1 item is published. 1 item is deleted. 1 item failed to be published.", resultMessage );
+        Assert.assertEquals(
+            "{\"state\":\"WARNING\",\"message\":\"2 items are published ( \\\"content2\\\" deleted ). Item \\\"content3\\\" could not be published.\"}",
+            resultMessage );
     }
 
     private String runTask( final PublishContentResult result )
@@ -95,7 +102,7 @@ public class PublishRunnableTaskTest
             setPushed( ContentIds.from( contents.get( 0 ).getId() ) ).
             build();
 
-        Assert.assertEquals( "\"Content 1\" is published.", runTask( result ) );
+        Assert.assertEquals( "{\"state\":\"SUCCESS\",\"message\":\"Item \\\"content1\\\" is published.\"}", runTask( result ) );
     }
 
     @Test
@@ -104,9 +111,10 @@ public class PublishRunnableTaskTest
     {
         final PublishContentResult result = PublishContentResult.create().
             setDeleted( ContentIds.from( contents.get( 0 ).getId() ) ).
+            setDeletedPath( contents.get( 0 ).getPath() ).
             build();
 
-        Assert.assertEquals( "The item is deleted.", runTask( result ) );
+        Assert.assertEquals( "{\"state\":\"SUCCESS\",\"message\":\"Item \\\"content1\\\" is deleted.\"}", runTask( result ) );
     }
 
     @Test
@@ -114,10 +122,10 @@ public class PublishRunnableTaskTest
         throws Exception
     {
         final PublishContentResult result = PublishContentResult.create().
-            setFailed( ContentIds.from( contents.get( 0 ).getId() ) ).
+            setFailed( ContentIds.from( contents.get( 0 ).getId(), contents.get( 1 ).getId() ) ).
             build();
 
-        Assert.assertEquals( "\"Content 1\" failed to be published.", runTask( result ) );
+        Assert.assertEquals( "{\"state\":\"ERROR\",\"message\":\"Failed to publish 2 items. \"}", runTask( result ) );
     }
 
     @Test
@@ -126,6 +134,6 @@ public class PublishRunnableTaskTest
     {
         final PublishContentResult result = PublishContentResult.create().build();
 
-        Assert.assertEquals( "Nothing to publish.", runTask( result ) );
+        Assert.assertEquals( "{\"state\":\"WARNING\",\"message\":\"Nothing to publish.\"}", runTask( result ) );
     }
 }
