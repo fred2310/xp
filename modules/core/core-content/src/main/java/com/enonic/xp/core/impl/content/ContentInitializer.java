@@ -15,7 +15,6 @@ import com.enonic.xp.context.ContextBuilder;
 import com.enonic.xp.data.PropertyTree;
 import com.enonic.xp.index.ChildOrder;
 import com.enonic.xp.index.IndexPath;
-import com.enonic.xp.index.IndexService;
 import com.enonic.xp.init.ExternalInitializer;
 import com.enonic.xp.node.CreateNodeParams;
 import com.enonic.xp.node.Node;
@@ -78,7 +77,7 @@ public final class ContentInitializer
 
     private final NodeService nodeService;
 
-    private final RepositoryService repositoryService;  
+    private final RepositoryService repositoryService;
 
     private ContentInitializer( final Builder builder )
     {

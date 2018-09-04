@@ -186,8 +186,9 @@ public final class PortalRequest
     {
         this.validTicket = validTicket;
     }
-    
-    public boolean isPortalBase() {
+
+    public boolean isPortalBase()
+    {
         return baseUri.startsWith( "/portal" ) || baseUri.startsWith( "/admin/portal" );
     }
 }

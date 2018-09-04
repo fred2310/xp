@@ -33,7 +33,8 @@ public class CreateMediaHandlerTest
     public void createMedia()
         throws Exception
     {
-        Mockito.when( this.contentService.create( Mockito.any( CreateMediaParams.class ) ) ).thenAnswer( mock -> createContent( (CreateMediaParams) mock.getArguments()[0] ) );
+        Mockito.when( this.contentService.create( Mockito.any( CreateMediaParams.class ) ) ).thenAnswer(
+            mock -> createContent( (CreateMediaParams) mock.getArguments()[0] ) );
 
         runFunction( "/site/test/CreateMediaHandlerTest.js", "createMedia" );
 

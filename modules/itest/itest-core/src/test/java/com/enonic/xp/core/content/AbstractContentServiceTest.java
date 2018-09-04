@@ -154,7 +154,7 @@ public class AbstractContentServiceTest
     private VersionServiceImpl versionService;
 
     private BranchServiceImpl branchService;
-    
+
     private IndexServiceInternalImpl indexServiceInternal;
 
     private IndexServiceImpl indexService;

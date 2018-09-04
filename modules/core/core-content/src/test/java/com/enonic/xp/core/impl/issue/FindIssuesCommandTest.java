@@ -59,7 +59,8 @@ public class FindIssuesCommandTest
 
         Mockito.when( nodeService.findByQuery( Mockito.any( NodeQuery.class ) ) ).thenReturn(
             FindNodesByQueryResult.create().hits( 20 ).totalHits( 40 ).build() );
-        Mockito.when( nodeService.getByIds( Mockito.any( NodeIds.class ) ) ).thenReturn( Nodes.from( IssueNodeTranslatorTest.createNode() ) );
+        Mockito.when( nodeService.getByIds( Mockito.any( NodeIds.class ) ) ).thenReturn(
+            Nodes.from( IssueNodeTranslatorTest.createNode() ) );
 
         FindIssuesResult result = command.execute();
 

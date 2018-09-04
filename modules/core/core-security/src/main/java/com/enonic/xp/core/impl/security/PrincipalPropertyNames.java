@@ -13,7 +13,7 @@ interface PrincipalPropertyNames
     String USER_STORE_KEY = "userStoreKey";
 
     String EMAIL_KEY = "email";
-    
+
     String LOGIN_KEY = "login";
 
     String MEMBER_KEY = "member";

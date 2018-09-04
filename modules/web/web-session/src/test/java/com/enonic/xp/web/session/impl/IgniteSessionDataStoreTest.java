@@ -269,7 +269,7 @@ public class IgniteSessionDataStoreTest
             {
                 return 10;
             }
-            
+
             public int write_timeout()
             {
                 return 1000;
