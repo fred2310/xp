@@ -1,9 +1,11 @@
+
 apply plugin: 'java-base'
 apply plugin: 'build-dashboard'
 
 ext {
     leafProjects = subprojects.findAll { p -> p.subprojects.empty }
     javaProjects = leafProjects - project( ':runtime' ) - project( ':docs' )
+    mavenPublishProjects = project( ':runtime' )
     mavenProjects = leafProjects
 }
 
@@ -27,6 +29,10 @@ configure( javaProjects ) {
 
 configure( mavenProjects ) {
     apply from: "$rootDir/gradle/maven.gradle"
+}
+
+configure( mavenPublishProjects ) {
+    apply from: "$rootDir/gradle/maven-publish.gradle"
 }
 
 configure( rootProject ) {

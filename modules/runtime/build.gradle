@@ -239,3 +239,10 @@ task run( type: Exec, dependsOn: 'installDist' ) {
         }
     }
 }
+
+publishing.publications {
+    mavenJava(MavenPublication) {
+        artifact distZip
+    }
+}
+task install(dependsOn: publishToMavenLocal)

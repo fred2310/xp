@@ -84,6 +84,7 @@ include 'app:app-system'
 
 include 'repack:repack-attoparser'
 include 'repack:repack-elasticsearch'
+//include 'repack:repack-elasticsearch-k8s-discovery'
 include 'repack:repack-jparsec'
 include 'repack:repack-okhttp'
 include 'repack:repack-resteasy'
