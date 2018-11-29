@@ -9,6 +9,7 @@ import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.List;
 import java.util.function.BiConsumer;
+import java.util.function.Consumer;
 import java.util.stream.Collectors;
 import java.util.zip.GZIPInputStream;
 
@@ -36,6 +37,7 @@ import com.enonic.xp.dump.SystemLoadListener;
 import com.enonic.xp.dump.VersionsLoadResult;
 import com.enonic.xp.node.NodeVersion;
 import com.enonic.xp.repo.impl.dump.AbstractFileProcessor;
+import com.enonic.xp.repo.impl.dump.DumpBlobRecord;
 import com.enonic.xp.repo.impl.dump.DumpBlobStore;
 import com.enonic.xp.repo.impl.dump.DumpConstants;
 import com.enonic.xp.repo.impl.dump.RepoDumpException;
@@ -249,6 +251,16 @@ public class FileDumpReader
             throw new RepoDumpException( "Cannot read meta-data", e );
         }
     }
+
+    public void processDumpBlobRecord( final Consumer<DumpBlobRecord> processor, final Segment segment )
+    {
+
+        dumpBlobStore.
+            list( segment ).
+            map( blobRecord -> (DumpBlobRecord) blobRecord ).
+            forEach( processor::accept );
+    }
+
 
     private TarArchiveInputStream openStream( final File tarFile )
         throws IOException

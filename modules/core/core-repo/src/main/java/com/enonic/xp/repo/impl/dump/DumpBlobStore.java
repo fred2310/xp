@@ -2,6 +2,7 @@ package com.enonic.xp.repo.impl.dump;
 
 import java.io.File;
 import java.io.IOException;
+import java.nio.file.Path;
 import java.util.stream.Stream;
 
 import org.slf4j.Logger;
@@ -32,6 +33,12 @@ public class DumpBlobStore
 
     @Override
     public BlobRecord getRecord( final Segment segment, final BlobKey key )
+        throws BlobStoreException
+    {
+        return doGetRecord( segment, key );
+    }
+
+    private BlobRecord doGetRecord( final Segment segment, final BlobKey key )
         throws BlobStoreException
     {
         final File file = getBlobFile( segment, key );
@@ -96,7 +103,20 @@ public class DumpBlobStore
     @Override
     public Stream<BlobRecord> list( final Segment segment )
     {
-        throw new BlobStoreException( "Not implemented" );
+        try
+        {
+            return java.nio.file.Files.walk( this.baseDir.toPath() ).
+                filter( path -> path.toFile().isFile() ).
+                filter( path -> isBlobFileName( segment, path ) ).
+                map( ( path -> {
+                    final BlobKey blobKey = BlobKey.from( path.getFileName().toString() );
+                    return doGetRecord( segment, blobKey );
+                } ) );
+        }
+        catch ( IOException e )
+        {
+            throw new BlobStoreException( "Failed to list blob records", e );
+        }
     }
 
     @Override
@@ -109,6 +129,18 @@ public class DumpBlobStore
     public void deleteSegment( final Segment segment )
     {
         throw new BlobStoreException( "Not implemented" );
+    }
+
+    private boolean isBlobFileName( final Segment segment, final Path path )
+    {
+        final String fileName = path.getFileName().toString();
+
+        if ( fileName.length() < 6 )
+        {
+            return false;
+        }
+
+        return getBlobFile( segment, BlobKey.from( fileName ) ).exists();
     }
 
     private File getBlobFile( final Segment segment, final BlobKey key )
