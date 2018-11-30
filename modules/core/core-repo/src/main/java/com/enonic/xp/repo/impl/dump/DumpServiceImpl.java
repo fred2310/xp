@@ -36,7 +36,7 @@ import com.enonic.xp.repo.impl.SecurityHelper;
 import com.enonic.xp.repo.impl.dump.model.DumpMeta;
 import com.enonic.xp.repo.impl.dump.reader.FileDumpReader;
 import com.enonic.xp.repo.impl.dump.upgrade.DumpUpgrader;
-import com.enonic.xp.repo.impl.dump.upgrade.FlattenedPageDumpUpgrader;
+import com.enonic.xp.repo.impl.dump.upgrade.flattenedpage.FlattenedPageDumpUpgrader;
 import com.enonic.xp.repo.impl.dump.upgrade.MissingModelVersionDumpUpgrader;
 import com.enonic.xp.repo.impl.dump.upgrade.VersionIdDumpUpgrader;
 import com.enonic.xp.repo.impl.dump.writer.FileDumpWriter;

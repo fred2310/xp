@@ -1,4 +1,4 @@
-package com.enonic.xp.repo.impl.dump.upgrade;
+package com.enonic.xp.repo.impl.dump.upgrade.flattenedpage;
 
 import java.io.IOException;
 import java.nio.file.Path;
@@ -9,10 +9,11 @@ import com.google.common.io.CharSource;
 
 import com.enonic.xp.blob.Segment;
 import com.enonic.xp.content.ContentConstants;
-import com.enonic.xp.data.PropertyTree;
 import com.enonic.xp.node.NodeVersion;
 import com.enonic.xp.repo.impl.dump.DumpBlobRecord;
 import com.enonic.xp.repo.impl.dump.reader.FileDumpReader;
+import com.enonic.xp.repo.impl.dump.upgrade.DumpUpgradeException;
+import com.enonic.xp.repo.impl.dump.upgrade.DumpUpgrader;
 import com.enonic.xp.repo.impl.node.NodeConstants;
 import com.enonic.xp.repo.impl.node.json.NodeVersionJsonSerializer;
 import com.enonic.xp.repository.RepositorySegmentUtils;
@@ -49,8 +50,11 @@ public class FlattenedPageDumpUpgrader
     private void upgradeBlobRecord( final DumpBlobRecord dumpBlobRecord )
     {
         final NodeVersion nodeVersion = getNodeVersion( dumpBlobRecord );
-        upgradeNodeVersionData( nodeVersion.getData() );
-        writeNodeVersion( nodeVersion, dumpBlobRecord );
+        final boolean upgraded = new FlattenedPageDataUpgrader().upgrade( nodeVersion.getData() );
+        if ( upgraded )
+        {
+            writeNodeVersion( nodeVersion, dumpBlobRecord );
+        }
     }
 
     private NodeVersion getNodeVersion( final DumpBlobRecord dumpBlobRecord )
@@ -81,8 +85,5 @@ public class FlattenedPageDumpUpgrader
         }
     }
 
-    private void upgradeNodeVersionData( final PropertyTree data )
-    {
-        data.setBoolean( "test", true );
-    }
+
 }
