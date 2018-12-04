@@ -18,8 +18,6 @@ import com.enonic.xp.context.ContextBuilder;
 import com.enonic.xp.dump.BranchLoadResult;
 import com.enonic.xp.dump.DumpService;
 import com.enonic.xp.dump.RepoLoadResult;
-import com.enonic.xp.dump.SystemDumpParams;
-import com.enonic.xp.dump.SystemDumpResult;
 import com.enonic.xp.dump.SystemDumpUpgradeParams;
 import com.enonic.xp.dump.SystemDumpUpgradeResult;
 import com.enonic.xp.dump.SystemLoadParams;
@@ -29,12 +27,12 @@ import com.enonic.xp.export.ImportNodesParams;
 import com.enonic.xp.export.NodeImportResult;
 import com.enonic.xp.home.HomeDir;
 import com.enonic.xp.impl.server.rest.model.SystemDumpRequestJson;
-import com.enonic.xp.impl.server.rest.model.SystemDumpResultJson;
+import com.enonic.xp.impl.server.rest.model.SystemDumpUpgradeRequestJson;
 import com.enonic.xp.impl.server.rest.model.SystemDumpUpgradeResultJson;
 import com.enonic.xp.impl.server.rest.model.SystemLoadRequestJson;
 import com.enonic.xp.impl.server.rest.model.SystemLoadResultJson;
-import com.enonic.xp.impl.server.rest.model.SystemDumpUpgradeRequestJson;
 import com.enonic.xp.impl.server.rest.model.VacuumResultJson;
+import com.enonic.xp.impl.server.rest.task.DumpRunnableTask;
 import com.enonic.xp.jaxrs.JaxRsComponent;
 import com.enonic.xp.node.NodePath;
 import com.enonic.xp.repository.CreateRepositoryParams;
@@ -44,6 +42,8 @@ import com.enonic.xp.repository.RepositoryId;
 import com.enonic.xp.repository.RepositoryService;
 import com.enonic.xp.security.RoleKeys;
 import com.enonic.xp.security.SystemConstants;
+import com.enonic.xp.task.TaskResultJson;
+import com.enonic.xp.task.TaskService;
 import com.enonic.xp.vacuum.VacuumParameters;
 import com.enonic.xp.vacuum.VacuumResult;
 import com.enonic.xp.vacuum.VacuumService;
@@ -66,6 +66,8 @@ public final class SystemResource
 
     private VacuumService vacuumService;
 
+    private TaskService taskService;
+
     private java.nio.file.Path getDumpDirectory( final String name )
     {
         return Paths.get( HomeDir.get().toString(), "data", "dump", name ).toAbsolutePath();
@@ -78,19 +80,16 @@ public final class SystemResource
 
     @POST
     @Path("dump")
-    public SystemDumpResultJson systemDump( final SystemDumpRequestJson request )
+    public TaskResultJson systemDump( final SystemDumpRequestJson request )
         throws Exception
     {
-        final SystemDumpParams params = SystemDumpParams.create().
-            dumpName( request.getName() ).
-            includeBinaries( true ).
-            includeVersions( request.isIncludeVersions() ).
-            maxAge( request.getMaxAge() ).
-            maxVersions( request.getMaxVersions() ).
-            build();
-
-        final SystemDumpResult result = this.dumpService.dump( params );
-        return SystemDumpResultJson.from( result );
+        return DumpRunnableTask.create().
+            description( "dump" ).
+            taskService( taskService ).
+            dumpService( dumpService ).
+            params( request ).
+            build().
+            createTaskResult();
     }
 
     @POST
@@ -278,6 +277,13 @@ public final class SystemResource
     public void setVacuumService( final VacuumService vacuumService )
     {
         this.vacuumService = vacuumService;
+    }
+
+    @SuppressWarnings("WeakerAccess")
+    @Reference
+    public void setTaskService( final TaskService taskService )
+    {
+        this.taskService = taskService;
     }
 
 
