@@ -154,6 +154,11 @@ class RepoDumper
             }
         }
 
+        if ( listener != null )
+        {
+            listener.branchDumped();
+        }
+
         return dumpedNodes;
     }
 

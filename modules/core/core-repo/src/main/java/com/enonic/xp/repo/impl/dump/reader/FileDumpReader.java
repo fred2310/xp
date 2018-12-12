@@ -161,6 +161,11 @@ public class FileDumpReader
 
         final EntriesLoadResult result = doLoadEntries( processor, tarFile );
 
+        if ( this.listener != null )
+        {
+            this.listener.branchLoaded();
+        }
+
         return BranchLoadResult.create( branch ).
             successful( result.getSuccessful() ).
             errors( result.getErrors().stream().map( error -> LoadError.error( error.getMessage() ) ).collect( Collectors.toList() ) ).
