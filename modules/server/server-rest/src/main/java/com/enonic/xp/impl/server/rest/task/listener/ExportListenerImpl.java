@@ -20,13 +20,13 @@ public class ExportListenerImpl
     @Override
     public void nodeExported( final long count )
     {
-        total = Math.toIntExact( count );
+        current += count;
+        progressReporter.progress( current, total );
     }
 
     @Override
     public void nodeResolved( final long count )
     {
-        current += count;
-        progressReporter.progress( current, total );
+        total = Math.toIntExact( count );
     }
 }
