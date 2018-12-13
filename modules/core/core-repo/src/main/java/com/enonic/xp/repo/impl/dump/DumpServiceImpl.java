@@ -261,21 +261,21 @@ public class DumpServiceImpl
             throw new SystemDumpException( "Cannot load system-dump; dump does not contain system repository" );
         }
 
+        if ( params.getListener() != null )
+        {
+            final long branchesCount = dumpReader.getRepositories().
+                stream().
+                flatMap( repositoryId -> dumpReader.getBranches( repositoryId ).stream() ).
+                count();
+
+            params.getListener().totalBranches( branchesCount );
+        }
+
         initializeSystemRepo( params, dumpReader, results );
 
         final List<Repository> repositoriesToLoad = repositoryService.list().stream().
             filter( ( repo ) -> !repo.getId().equals( SystemConstants.SYSTEM_REPO.getId() ) ).
             collect( Collectors.toList() );
-
-        if ( params.getListener() != null )
-        {
-            final long branchesCount = repositoriesToLoad.
-                stream().
-                flatMap( repository -> repository.getBranches().stream() ).
-                count() + SystemConstants.SYSTEM_REPO.getBranches().getSize();
-
-            params.getListener().totalBranches( branchesCount );
-        }
 
         for ( Repository repository : repositoriesToLoad )
         {

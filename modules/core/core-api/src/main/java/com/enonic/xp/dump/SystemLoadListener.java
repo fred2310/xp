@@ -12,6 +12,4 @@ public interface SystemLoadListener
     void loadingVersions( final RepositoryId repositoryId );
 
     void entryLoaded();
-
-    void branchLoaded();
 }

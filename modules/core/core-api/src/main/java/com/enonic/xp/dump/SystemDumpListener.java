@@ -11,5 +11,5 @@ public interface SystemDumpListener
 
     void nodeDumped();
 
-    void branchDumped();
+//    void branchDumped();
 }

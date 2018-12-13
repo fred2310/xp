@@ -169,18 +169,12 @@ public class LoadRunnableTask
 
         final java.nio.file.Path importPath = rootDir.resolve( repoName ).resolve( branch );
 
-        return getContext( branch, repoName ).callWith( () -> {
-            final NodeImportResult result = this.exportService.importNodes( ImportNodesParams.create().
-                source( VirtualFiles.from( importPath ) ).
-                targetNodePath( NodePath.ROOT ).
-                includeNodeIds( true ).
-                includePermissions( true ).
-                build() );
-
-            loadDumpListener.branchLoaded();
-
-            return result;
-        } );
+        return getContext( branch, repoName ).callWith( () -> this.exportService.importNodes( ImportNodesParams.create().
+            source( VirtualFiles.from( importPath ) ).
+            targetNodePath( NodePath.ROOT ).
+            includeNodeIds( true ).
+            includePermissions( true ).
+            build() ) );
     }
 
     private java.nio.file.Path getDumpDirectory( final String name )
