@@ -12,11 +12,11 @@ public class SystemLoadListenerImpl
 
     private int total = 0;
 
-    private int progress = 0;
-
     private int currentBranchTotal = 0;
 
     private int currentBranchProgress = 0;
+
+    private int currentBranch = 0;
 
     public SystemLoadListenerImpl( final ProgressReporter progressReporter )
     {
@@ -24,28 +24,17 @@ public class SystemLoadListenerImpl
     }
 
     @Override
-    public void totalBranches( final long count )
+    public void totalBranches( final long total )
     {
-        total = Math.toIntExact( count );
-        if ( progress > 0 )
-        {
-            progressReporter.progress( progress, this.total );
-        }
+        this.total = Math.toIntExact( total );
     }
 
     @Override
     public void loadingBranch( final RepositoryId repositoryId, final Branch branch, final Long total )
     {
+        currentBranchTotal = Math.toIntExact( total );
         currentBranchProgress = 0;
-        currentBranchTotal = total.intValue();
-    }
-
-
-    @Override
-    public void loadingVersions( final RepositoryId repositoryId )
-    {
-//        currentBranchTotal = 0;
-//        currentBranchProgress = 0;
+        currentBranch++;
     }
 
     @Override
@@ -55,8 +44,15 @@ public class SystemLoadListenerImpl
 
         if ( currentBranchTotal != 0 && total != 0 )
         {
-            progress += currentBranchProgress / currentBranchTotal / total;
-            progressReporter.progress( progress, total );
+            final int progress = Math.round(
+                100 * ( ( (float) ( currentBranch - 1 ) / total ) + ( (float) currentBranchProgress / currentBranchTotal / total ) ) );
+
+            progressReporter.progress( progress, 100 );
         }
+    }
+
+    @Override
+    public void loadingVersions( final RepositoryId repositoryId )
+    {
     }
 }

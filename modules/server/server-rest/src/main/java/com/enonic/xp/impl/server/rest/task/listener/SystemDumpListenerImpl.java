@@ -12,11 +12,11 @@ public class SystemDumpListenerImpl
 
     private int total = 0;
 
-    private int progress = 0;
-
     private int currentBranchTotal = 0;
 
     private int currentBranchProgress = 0;
+
+    private int currentBranch = 0;
 
     public SystemDumpListenerImpl( final ProgressReporter progressReporter )
     {
@@ -34,6 +34,7 @@ public class SystemDumpListenerImpl
     {
         currentBranchTotal = Math.toIntExact( total );
         currentBranchProgress = 0;
+        currentBranch++;
     }
 
     @Override
@@ -43,14 +44,10 @@ public class SystemDumpListenerImpl
 
         if ( currentBranchTotal != 0 && total != 0 )
         {
-            progress += currentBranchProgress / currentBranchTotal / total;
-            progressReporter.progress( progress, total );
+            final int progress = Math.round(
+                100 * ( ( (float) ( currentBranch - 1 ) / total ) + ( (float) currentBranchProgress / currentBranchTotal / total ) ) );
+
+            progressReporter.progress( progress, 100 );
         }
     }
-
-    /*@Override
-    public void branchDumped()
-    {
-        progressReporter.progress( ++progressCount, this.total );
-    }*/
 }
