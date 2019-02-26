@@ -7,14 +7,20 @@ import java.net.URL;
 import javax.xml.transform.OutputKeys;
 import javax.xml.transform.Transformer;
 import javax.xml.transform.TransformerFactory;
+import javax.xml.transform.sax.SAXSource;
 import javax.xml.transform.stream.StreamResult;
 import javax.xml.transform.stream.StreamSource;
+
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import org.xml.sax.InputSource;
 
 import net.sf.saxon.Configuration;
 import net.sf.saxon.TransformerFactoryImpl;
 
 public class HtmlAreaFigureXsltTransformer
 {
+    private final static Logger LOG = LoggerFactory.getLogger( HtmlAreaFigureXsltTransformer.class );
 
     private final Transformer transformer;
 
@@ -26,6 +32,7 @@ public class HtmlAreaFigureXsltTransformer
         {
             transformer = createTransformerFactory().
                 newTransformer( new StreamSource( url.openStream() ) );
+            transformer.setParameter( "suppressXsltNamespaceCheck", "false" );
             transformer.setOutputProperty( OutputKeys.OMIT_XML_DECLARATION, "yes" );
         }
         catch ( Exception e )
@@ -34,20 +41,23 @@ public class HtmlAreaFigureXsltTransformer
         }
     }
 
-    public String transform( final String source )
+    public String transform( final String propertyName, final String source )
     {
         try
         {
-//            final String source2 = source.replace( "&nbsp;", "<xsl:text disable-output-escaping=\"yes\">&nbsp;</xsl:text>" );
-            final StringReader reader = new StringReader( "<!DOCTYPE test [ <!ENTITY nbsp \"&#160;\">]><root>" + source + "</root>" );
+
+            final StringReader reader = new StringReader( "<root xmlns=\"http://www.w3.org/1999/xhtml\"  >" + source + "</root>" );
             final StringWriter writer = new StringWriter();
-            transformer.transform( new StreamSource( reader ), new StreamResult( writer ) );
-            final String target = writer.toString();
-            return target.replaceAll( "\u00A0", "&nbsp;" );
+            transformer.transform( new SAXSource( new org.ccil.cowan.tagsoup.Parser(), new InputSource( reader ) ),
+                                   new StreamResult( writer ) );
+//            final String target = writer.toString();
+            return writer.toString();
+//            return target.replaceAll( "\u00A0", "&nbsp;" );
         }
         catch ( Exception e )
         {
-            throw new RuntimeException( "Failed to transform HTML Area property '" + source + "'", e );
+            LOG.warn( "Failed to transform HTML Area property [{}]: {}", propertyName, e.getMessage() );
+            return source;
         }
     }
 
@@ -64,6 +74,7 @@ public class HtmlAreaFigureXsltTransformer
         configuration.setVersionWarning( false );
         configuration.setCompileWithTracing( true );
         configuration.setValidationWarnings( true );
+
         return configuration;
     }
 }

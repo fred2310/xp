@@ -37,8 +37,7 @@ public class HtmlAreaNodeDataUpgrader
 
     private static final int HTML_LINK_PATTERN_ID_GROUP = 5;
 
-    private static final Pattern KEEP_SIZE_IMAGE_PATTERN =
-        Pattern.compile( "(href|src)=\"image://([0-9a-z-/]+)\\?keepSize=true\"" );
+    private static final Pattern KEEP_SIZE_IMAGE_PATTERN = Pattern.compile( "(href|src)=\"image://([0-9a-z-/]+)\\?keepSize=true\"" );
 
     private static final String PROCESSED_REFERENCES_PROPERTY_NAME = "processedReferences";
 
@@ -161,7 +160,7 @@ public class HtmlAreaNodeDataUpgrader
     private void upgradePropertyValue( final Property property )
     {
         String upgradedValue = upgradeKeepSizeImages( property.getString() );
-        upgradedValue = upgradeFigures( upgradedValue );
+        upgradedValue = upgradeFigures( property.getName(), upgradedValue );
         property.setValue( ValueFactory.newString( upgradedValue ) );
     }
 
@@ -170,24 +169,27 @@ public class HtmlAreaNodeDataUpgrader
         final Matcher matcher = KEEP_SIZE_IMAGE_PATTERN.matcher( value );
         matcher.reset();
         boolean result = matcher.find();
-        if (result) {
+        if ( result )
+        {
             StringBuffer sb = new StringBuffer();
-            do {
+            do
+            {
                 final String attributeName = matcher.group( 1 );
                 final String contentId = matcher.group( 2 );
                 final String attachmentLinkEquivalent = attributeName + "=\"media://" + contentId + "\"";
 
-                matcher.appendReplacement(sb, attachmentLinkEquivalent);
+                matcher.appendReplacement( sb, attachmentLinkEquivalent );
                 result = matcher.find();
-            } while (result);
-            matcher.appendTail(sb);
+            }
+            while ( result );
+            matcher.appendTail( sb );
             return sb.toString();
         }
         return value;
     }
 
-    private String upgradeFigures( final String value )
+    private String upgradeFigures( final String propertyName, final String value )
     {
-        return figureXsltTransformer.transform( value );
+        return figureXsltTransformer.transform( propertyName, value );
     }
 }

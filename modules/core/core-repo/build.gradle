@@ -4,7 +4,9 @@ dependencies {
     compile project( ':core:core-api' )
     compile 'org.elasticsearch:elasticsearch:2.4.6'
     compile 'org.apache.commons:commons-compress:1.14'
-    compile 'net.sf.saxon:Saxon-HE:9.5.1-8'
+    compile 'net.sf.saxon:Saxon-HE:9.8.0-14'
+    compile 'org.jsoup:jsoup:1.11.3'
+    compile 'org.ccil.cowan.tagsoup:tagsoup:1.2.1'
     testCompile project( path: ':core:core-blobstore', configuration: 'testOutput' )
     testCompile project( path: ':core:core-api', configuration: 'testOutput' )
 }

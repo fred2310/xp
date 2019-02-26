@@ -2,7 +2,7 @@
 <!DOCTYPE xsl:stylesheet [
     <!ENTITY nl "&#xa;">
     ]>
-<xsl:stylesheet version="2.0" xmlns:xsl="http://www.w3.org/1999/XSL/Transform">
+<xsl:stylesheet version="2.0" xmlns:xsl="http://www.w3.org/1999/XSL/Transform" xpath-default-namespace="http://www.w3.org/1999/xhtml">
   <xsl:output method="xhtml" indent="no"/>
 
   <xsl:template match="/">
