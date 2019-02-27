@@ -68,7 +68,7 @@ public class ClusterManagerImpl
             {
                 try
                 {
-                    checkProviders();
+                    doGetClusterState();
                 }
                 catch ( Exception e )
                 {
@@ -128,19 +128,6 @@ public class ClusterManagerImpl
                 LOG.warn( "Waiting for cluster providers" );
                 Thread.sleep( checkIntervalMs );
             }
-        }
-    }
-
-    private void checkProviders()
-    {
-        final ClusterState clusterState = doGetClusterState();
-        if ( ClusterState.OK == clusterState )
-        {
-            activateProviders();
-        }
-        else
-        {
-            deactivateProviders();
         }
     }
 
