@@ -15,6 +15,8 @@ import org.osgi.service.component.annotations.Reference;
 import com.enonic.xp.admin.impl.rest.resource.ResourceConstants;
 import com.enonic.xp.jaxrs.JaxRsComponent;
 import com.enonic.xp.security.RoleKeys;
+import com.enonic.xp.task.GetTaskInfoParams;
+import com.enonic.xp.task.GetTasksParams;
 import com.enonic.xp.task.TaskId;
 import com.enonic.xp.task.TaskInfo;
 import com.enonic.xp.task.TaskService;
@@ -33,7 +35,8 @@ public final class TaskResource
     @Path("/")
     public TaskInfoListJson list()
     {
-        final List<TaskInfo> taskList = taskService.getAllTasks();
+        final GetTasksParams params = GetTasksParams.create().build();
+        final List<TaskInfo> taskList = taskService.getTasks( params );
         return new TaskInfoListJson( taskList );
     }
 
@@ -43,7 +46,8 @@ public final class TaskResource
         throws Exception
     {
         final TaskId taskId = TaskId.from( taskIdStr );
-        final TaskInfo taskInfo = taskService.getTaskInfo( taskId );
+        final GetTaskInfoParams params = GetTaskInfoParams.from( taskId );
+        final TaskInfo taskInfo = taskService.getTaskInfo( params );
         return new TaskInfoJson( taskInfo );
     }
 

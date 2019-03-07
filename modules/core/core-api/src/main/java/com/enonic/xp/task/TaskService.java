@@ -14,9 +14,16 @@ public interface TaskService
 
     TaskId submitTask( DescriptorKey key, PropertyTree config );
 
+    @Deprecated
     TaskInfo getTaskInfo( TaskId taskId );
 
+    TaskInfo getTaskInfo( final GetTaskInfoParams params );
+
+    @Deprecated
     List<TaskInfo> getAllTasks();
 
+    @Deprecated
     List<TaskInfo> getRunningTasks();
+
+    List<TaskInfo> getTasks( final GetTasksParams params );
 }

@@ -7,6 +7,7 @@ import java.util.stream.Stream;
 
 import com.enonic.xp.script.bean.BeanContext;
 import com.enonic.xp.script.bean.ScriptBean;
+import com.enonic.xp.task.GetTasksParams;
 import com.enonic.xp.task.TaskInfo;
 import com.enonic.xp.task.TaskService;
 import com.enonic.xp.task.TaskState;
@@ -20,6 +21,8 @@ public final class ListTasksHandler
 
     private TaskState state;
 
+    private Boolean local;
+
     public void setName( final String name )
     {
         this.name = name;
@@ -30,10 +33,18 @@ public final class ListTasksHandler
         this.state = state == null ? null : TaskState.valueOf( state.toUpperCase() );
     }
 
+    public void setLocal( final Boolean local )
+    {
+        this.local = local;
+    }
+
     public List<TaskMapper> list()
     {
         final TaskService taskService = taskServiceSupplier.get();
-        final List<TaskInfo> tasks = taskService.getAllTasks();
+        final GetTasksParams params = GetTasksParams.create().
+            local( local == null ? false : local ).
+            build();
+        final List<TaskInfo> tasks = taskService.getTasks(params);
 
         Stream<TaskInfo> taskStream = tasks.stream();
         if ( name != null )

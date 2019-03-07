@@ -87,6 +87,7 @@ exports.submitNamed = function (params) {
  * @param {object} [params] JSON with optional parameters.
  * @param {string} [params.name] Filter by name.
  * @param {object} [params.state] Filter by task state ('WAITING' | 'RUNNING' | 'FINISHED' | 'FAILED').
+ * @param {object} [params.local=false] Retrieve only local tasks if true.
  * @returns {TaskInfo[]} List with task information for every task.
  */
 exports.list = function (params) {
@@ -95,6 +96,7 @@ exports.list = function (params) {
 
     bean.name = __.nullOrValue(params.name);
     bean.state = __.nullOrValue(params.state);
+    bean.local = __.nullOrValue(params.local);
 
     return __.toNativeObject(bean.list());
 
@@ -106,10 +108,13 @@ exports.list = function (params) {
  * @example-ref examples/task/get.js
  *
  * @param {string} taskId Id of the task.
+ * @param {object} [params] JSON with optional parameters.
+ * @param {boolean} [params.local=false] Only local task if true.
  *
  * @returns {TaskInfo} Detail information for the task. Or null if the task could not be found.
  */
-exports.get = function (taskId) {
+exports.get = function (taskId, params) {
+    params = params || {};
 
     var bean = __.newBean('com.enonic.xp.lib.task.GetTaskHandler');
     if (taskId === undefined) {
@@ -117,6 +122,7 @@ exports.get = function (taskId) {
     }
 
     bean.taskId = __.nullOrValue(taskId);
+    bean.local = __.nullOrValue(params.local);
 
     return __.toNativeObject(bean.getTask());
 

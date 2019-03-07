@@ -9,6 +9,7 @@ import org.mockito.Mockito;
 import com.enonic.xp.admin.impl.rest.resource.AdminResourceTestSupport;
 import com.enonic.xp.app.ApplicationKey;
 import com.enonic.xp.security.PrincipalKey;
+import com.enonic.xp.task.GetTaskInfoParams;
 import com.enonic.xp.task.TaskId;
 import com.enonic.xp.task.TaskInfo;
 import com.enonic.xp.task.TaskProgress;
@@ -59,7 +60,7 @@ public class TaskResourceTest
             progress( TaskProgress.create().current( 42 ).total( 42 ).info( "Process completed" ).build() ).
             build();
 
-        Mockito.when( this.taskService.getAllTasks() ).thenReturn( Arrays.asList( taskInfo1, taskInfo2 ) );
+        Mockito.when( this.taskService.getTasks( Mockito.any() ) ).thenReturn( Arrays.asList( taskInfo1, taskInfo2 ) );
 
         String response = request().path( "tasks" ).get().getAsString();
 
@@ -81,7 +82,7 @@ public class TaskResourceTest
             progress( TaskProgress.create().current( 2 ).total( 10 ).info( "Processing items" ).build() ).
             build();
 
-        Mockito.when( this.taskService.getTaskInfo( taskId ) ).thenReturn( taskInfo );
+        Mockito.when( this.taskService.getTaskInfo( GetTaskInfoParams.from( taskId ) ) ).thenReturn( taskInfo );
 
         String response = request().path( "tasks/" + taskId.toString() ).get().getAsString();
 

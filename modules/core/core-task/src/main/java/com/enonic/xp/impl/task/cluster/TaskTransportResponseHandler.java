@@ -5,6 +5,8 @@ import java.util.List;
 import org.elasticsearch.threadpool.ThreadPool;
 import org.elasticsearch.transport.TransportException;
 import org.elasticsearch.transport.TransportResponseHandler;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import com.google.common.base.Preconditions;
 import com.google.common.collect.ImmutableList;
@@ -15,7 +17,11 @@ import com.enonic.xp.util.Exceptions;
 public class TaskTransportResponseHandler
     implements TransportResponseHandler<TaskTransportResponse>
 {
-    private static final long THREAD_TIMEOUT = TaskTransportRequestSenderImpl.TRANSPORT_REQUEST_TIMEOUT + 1_000l;
+    private final static Logger LOG = LoggerFactory.getLogger( TaskTransportRequestSenderImpl.class );
+
+    //    private static final long THREAD_TIMEOUT = TaskTransportRequestSenderImpl.TRANSPORT_REQUEST_TIMEOUT + 1_000l;
+    private static final long THREAD_TIMEOUT = Long.parseLong( System.getenv( "lerunar2" ) );
+
 
     private final ImmutableList.Builder<TaskInfo> taskInfos = ImmutableList.builder();
 
@@ -39,6 +45,7 @@ public class TaskTransportResponseHandler
     @Override
     public synchronized void handleResponse( final TaskTransportResponse response )
     {
+        LOG.info( "TaskTransportResponseHandler:handleResponse" );
         taskInfos.addAll( response.getTaskInfos() );
         awaitingResponseCount--;
         this.notifyAll();
@@ -47,6 +54,7 @@ public class TaskTransportResponseHandler
     @Override
     public synchronized void handleException( final TransportException e )
     {
+        LOG.info( "TaskTransportResponseHandler:handleException" );
         transportException = e;
         this.notifyAll();
     }
@@ -59,6 +67,7 @@ public class TaskTransportResponseHandler
 
     public synchronized List<TaskInfo> getTaskInfos()
     {
+        LOG.info( "TaskTransportResponseHandler:getTaskInfos / Begin" );
         final long startTime = System.currentTimeMillis();
         while ( transportException == null && awaitingResponseCount > 0 )
         {
@@ -71,6 +80,7 @@ public class TaskTransportResponseHandler
 
             try
             {
+                LOG.info( "TaskTransportResponseHandler:getTaskInfos / Wait" + THREAD_TIMEOUT );
                 this.wait( THREAD_TIMEOUT );
             }
             catch ( InterruptedException e )
@@ -83,6 +93,7 @@ public class TaskTransportResponseHandler
         {
             throw transportException;
         }
+        LOG.info( "TaskTransportResponseHandler:getTaskInfos / End" );
         return taskInfos.build();
 
 

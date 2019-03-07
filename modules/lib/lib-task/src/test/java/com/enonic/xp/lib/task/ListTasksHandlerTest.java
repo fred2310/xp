@@ -46,7 +46,7 @@ public class ListTasksHandlerTest
             progress( TaskProgress.create().current( 33 ).total( 42 ).info( "Processing item 33" ).build() ).
             build();
 
-        Mockito.when( this.taskService.getAllTasks() ).thenReturn( taskList() ).thenReturn( Collections.singletonList( taskInfo ) );
+        Mockito.when( this.taskService.getTasks(Mockito.any()) ).thenReturn( taskList() ).thenReturn( Collections.singletonList( taskInfo ) );
 
         runScript( "/site/lib/xp/examples/task/list.js" );
     }
@@ -55,7 +55,7 @@ public class ListTasksHandlerTest
     public void testListExisting()
         throws Exception
     {
-        Mockito.when( this.taskService.getAllTasks() ).thenReturn( taskList() );
+        Mockito.when( this.taskService.getTasks(Mockito.any()) ).thenReturn( taskList() );
 
         runFunction( "/site/test/list-test.js", "getExistingTasks" );
     }
@@ -64,7 +64,7 @@ public class ListTasksHandlerTest
     public void testListNone()
         throws Exception
     {
-        Mockito.when( this.taskService.getAllTasks() ).thenReturn( new ArrayList<>() );
+        Mockito.when( this.taskService.getTasks(Mockito.any()) ).thenReturn( new ArrayList<>() );
 
         runFunction( "/site/test/list-test.js", "listNone" );
     }

@@ -5,6 +5,8 @@ import java.util.List;
 
 import com.enonic.xp.data.PropertyTree;
 import com.enonic.xp.page.DescriptorKey;
+import com.enonic.xp.task.GetTaskInfoParams;
+import com.enonic.xp.task.GetTasksParams;
 import com.enonic.xp.task.ProgressReporter;
 import com.enonic.xp.task.RunnableTask;
 import com.enonic.xp.task.TaskId;
@@ -43,6 +45,12 @@ class MockTaskService
     }
 
     @Override
+    public TaskInfo getTaskInfo( final GetTaskInfoParams params )
+    {
+        return null;
+    }
+
+    @Override
     public List<TaskInfo> getAllTasks()
     {
         return null;
@@ -50,6 +58,12 @@ class MockTaskService
 
     @Override
     public List<TaskInfo> getRunningTasks()
+    {
+        return null;
+    }
+
+    @Override
+    public List<TaskInfo> getTasks( final GetTasksParams params )
     {
         return null;
     }

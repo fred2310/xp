@@ -34,6 +34,7 @@ import com.enonic.xp.impl.task.cluster.TaskTransportResponse;
 import com.enonic.xp.impl.task.cluster.TaskTransportResponseHandler;
 import com.enonic.xp.impl.task.script.NamedTaskScriptFactory;
 import com.enonic.xp.page.DescriptorKey;
+import com.enonic.xp.task.GetTaskInfoParams;
 import com.enonic.xp.task.RunnableTask;
 import com.enonic.xp.task.TaskDescriptor;
 import com.enonic.xp.task.TaskDescriptorService;
@@ -136,14 +137,13 @@ public class TaskServiceImplTest
         //Creates Transport Service
         final TransportService transportService = Mockito.mock( TransportService.class );
         Mockito.
-            doAnswer( invocation ->
-                      {
-                          sendRequestArguments = invocation.getArguments();
-                          transportRequest = (TaskTransportRequest) sendRequestArguments[2];
-                          transportResponseHandler = (TaskTransportResponseHandler) sendRequestArguments[4];
-                          LOGGER.info( "Transport service send a " + transportRequest.getType().toString() + " task request" );
-                          return null;
-                      } ).
+            doAnswer( invocation -> {
+                sendRequestArguments = invocation.getArguments();
+                transportRequest = (TaskTransportRequest) sendRequestArguments[2];
+                transportResponseHandler = (TaskTransportResponseHandler) sendRequestArguments[4];
+                LOGGER.info( "Transport service send a " + transportRequest.getType().toString() + " task request" );
+                return null;
+            } ).
             when( transportService ).
             sendRequest( Mockito.eq( node2 ), Mockito.eq( TaskTransportRequestSenderImpl.ACTION ), Mockito.any( TransportRequest.class ),
                          Mockito.any( TransportRequestOptions.class ), Mockito.any( TransportResponseHandler.class ) );
@@ -223,7 +223,7 @@ public class TaskServiceImplTest
         throws InterruptedException, IOException
     {
         //Calls TaskService method
-        final Thread senderThread = callServiceMethod( () -> Arrays.asList( taskService.getTaskInfo( TaskId.from( "task2" ) ) ) );
+        final Thread senderThread = callServiceMethod( () -> Arrays.asList( taskService.getTaskInfo( GetTaskInfoParams.from( "123" ) ) ) );
 
         //Checks request sent by TaskService
         Assert.assertEquals( TaskTransportRequest.Type.BY_ID, transportRequest.getType() );
@@ -253,8 +253,7 @@ public class TaskServiceImplTest
         Mockito.when( taskDescriptorService.getTasks( app ) ).thenReturn( descriptors );
 
         // set up script
-        final RunnableTask runnableTask = ( id, progressReporter ) ->
-        {
+        final RunnableTask runnableTask = ( id, progressReporter ) -> {
         };
         Mockito.when( namedTaskScriptFactory.create( Mockito.eq( descriptor ), Mockito.any() ) ).thenReturn( runnableTask );
         Mockito.when( taskManager.submitTask( eq( runnableTask ), eq( "My task" ), anyString() ) ).thenReturn( TaskId.from( "123" ) );
@@ -324,14 +323,13 @@ public class TaskServiceImplTest
     {
         final TransportChannel transportChannel = Mockito.mock( TransportChannel.class );
         Mockito.
-            doAnswer( invocation ->
-                      {
-                          final TaskTransportResponse taskTransportResponse = (TaskTransportResponse) invocation.getArguments()[0];
-                          LOGGER.info( "Transport request handler of " + nodeId + " receives a request and sends back a response with " +
-                                           taskTransportResponse.getTaskInfos().size() + " task infos" );
-                          transportResponseHandler.handleResponse( taskTransportResponse );
-                          return null;
-                      } ).
+            doAnswer( invocation -> {
+                final TaskTransportResponse taskTransportResponse = (TaskTransportResponse) invocation.getArguments()[0];
+                LOGGER.info( "Transport request handler of " + nodeId + " receives a request and sends back a response with " +
+                                 taskTransportResponse.getTaskInfos().size() + " task infos" );
+                transportResponseHandler.handleResponse( taskTransportResponse );
+                return null;
+            } ).
             when( transportChannel ).
             sendResponse( Mockito.any( TransportResponse.class ) );
 

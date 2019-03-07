@@ -7,6 +7,7 @@ import org.mockito.Mockito;
 
 import com.enonic.xp.app.ApplicationKey;
 import com.enonic.xp.security.PrincipalKey;
+import com.enonic.xp.task.GetTaskInfoParams;
 import com.enonic.xp.task.TaskId;
 import com.enonic.xp.task.TaskInfo;
 import com.enonic.xp.task.TaskProgress;
@@ -40,7 +41,8 @@ public class GetTaskHandlerTest
             startTime( Instant.parse( "2017-10-01T09:00:00Z" ) ).
             progress( TaskProgress.create().current( 33 ).total( 42 ).info( "Processing item 33" ).build() ).
             build();
-        Mockito.when( this.taskService.getTaskInfo( TaskId.from( "7ca603c1-3b88-4009-8f30-46ddbcc4bb19" ) ) ).thenReturn( taskInfo );
+        Mockito.when( this.taskService.getTaskInfo( GetTaskInfoParams.from( "7ca603c1-3b88-4009-8f30-46ddbcc4bb19" ) ) ).thenReturn(
+            taskInfo );
 
         runScript( "/site/lib/xp/examples/task/get.js" );
     }
@@ -58,7 +60,7 @@ public class GetTaskHandlerTest
             startTime( Instant.parse( "2017-10-01T09:00:00Z" ) ).
             progress( TaskProgress.create().current( 33 ).total( 42 ).info( "Processing item 33" ).build() ).
             build();
-        Mockito.when( this.taskService.getTaskInfo( TaskId.from( "123" ) ) ).thenReturn( taskInfo );
+        Mockito.when( this.taskService.getTaskInfo( GetTaskInfoParams.from( "123" ) ) ).thenReturn( taskInfo );
 
         runFunction( "/site/test/get-test.js", "getExistingTask" );
     }
@@ -67,7 +69,7 @@ public class GetTaskHandlerTest
     public void testGetTaskNotFound()
         throws Exception
     {
-        Mockito.when( this.taskService.getTaskInfo( TaskId.from( "123" ) ) ).thenReturn( null );
+        Mockito.when( this.taskService.getTaskInfo( GetTaskInfoParams.from( TaskId.from( "123" ) ) ) ).thenReturn( null );
 
         runFunction( "/site/test/get-test.js", "getTaskNotFound" );
     }

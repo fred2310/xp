@@ -51,6 +51,7 @@ public final class TaskTransportRequestHandler
     {
         try
         {
+            LOG.info( "TaskTransportRequestHandler:messageReceived" );
             final List<TaskInfo> taskInfos;
             if ( TaskTransportRequest.Type.BY_ID == request.getType() )
             {

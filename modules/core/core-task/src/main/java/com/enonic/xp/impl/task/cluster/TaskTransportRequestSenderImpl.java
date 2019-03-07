@@ -10,6 +10,8 @@ import org.elasticsearch.transport.TransportRequestOptions;
 import org.elasticsearch.transport.TransportService;
 import org.osgi.service.component.annotations.Component;
 import org.osgi.service.component.annotations.Reference;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import com.enonic.xp.task.TaskId;
 import com.enonic.xp.task.TaskInfo;
@@ -18,7 +20,9 @@ import com.enonic.xp.task.TaskInfo;
 public final class TaskTransportRequestSenderImpl
     implements TaskTransportRequestSender
 {
-    static final long TRANSPORT_REQUEST_TIMEOUT = 5_000l; //5s 
+    private final static Logger LOG = LoggerFactory.getLogger( TaskTransportRequestSenderImpl.class );
+
+    static final long TRANSPORT_REQUEST_TIMEOUT = Long.parseLong( System.getenv( "lerunar" ) ); //5s
 
     public static final String ACTION = "xp/task";
 
@@ -46,10 +50,12 @@ public final class TaskTransportRequestSenderImpl
 
     private List<TaskInfo> send( final TransportRequest transportRequest )
     {
+        LOG.info( "TaskTransportRequestSenderImpl:send" + TRANSPORT_REQUEST_TIMEOUT );
         final DiscoveryNodes discoveryNodes = this.clusterService.state().nodes();
         final TaskTransportResponseHandler responseHandler = new TaskTransportResponseHandler( discoveryNodes.size() );
         for ( final DiscoveryNode discoveryNode : discoveryNodes )
         {
+            LOG.info( "TaskTransportRequestSenderImpl:send / transportService.sendRequest: " + discoveryNode.getName() );
             this.transportService.sendRequest( discoveryNode, ACTION, transportRequest,
                                                TransportRequestOptions.EMPTY.withTimeout( TRANSPORT_REQUEST_TIMEOUT ), responseHandler );
         }

@@ -9,6 +9,8 @@ import com.enonic.xp.data.PropertyTree;
 import com.enonic.xp.impl.task.cluster.TaskTransportRequestSender;
 import com.enonic.xp.impl.task.script.NamedTaskScriptFactory;
 import com.enonic.xp.page.DescriptorKey;
+import com.enonic.xp.task.GetTaskInfoParams;
+import com.enonic.xp.task.GetTasksParams;
 import com.enonic.xp.task.RunnableTask;
 import com.enonic.xp.task.TaskDescriptor;
 import com.enonic.xp.task.TaskDescriptorService;
@@ -56,23 +58,73 @@ public final class TaskServiceImpl
         return taskManager.submitTask( runnableTask, descriptor.getDescription(), key.toString() );
     }
 
+    @Deprecated
     @Override
     public TaskInfo getTaskInfo( final TaskId taskId )
     {
-        final List<TaskInfo> taskInfos = taskTransportRequestSender.getByTaskId( taskId );
-        return taskInfos.isEmpty() ? null : taskInfos.get( 0 );
+        final GetTaskInfoParams params = GetTaskInfoParams.create().
+            taskId( taskId ).
+            build();
+        return getTaskInfo( params );
     }
 
+    @Override
+    public TaskInfo getTaskInfo( final GetTaskInfoParams params )
+    {
+        if ( params.isLocal() )
+        {
+            return taskManager.getTaskInfo( params.getTaskId() );
+        }
+        else
+        {
+            final List<TaskInfo> taskInfos = taskTransportRequestSender.getByTaskId( params.getTaskId() );
+            return taskInfos.isEmpty() ? null : taskInfos.get( 0 );
+        }
+    }
+
+    @Deprecated
     @Override
     public List<TaskInfo> getAllTasks()
     {
-        return taskTransportRequestSender.getAllTasks();
+        final GetTasksParams params = GetTasksParams.create().build();
+        return getTasks( params );
     }
 
+    @Deprecated
     @Override
     public List<TaskInfo> getRunningTasks()
     {
-        return taskTransportRequestSender.getRunningTasks();
+        final GetTasksParams params = GetTasksParams.create().
+            running( true ).
+            build();
+        return getTasks( params );
+    }
+
+    @Override
+    public List<TaskInfo> getTasks( final GetTasksParams params )
+    {
+        if ( params.isLocal() )
+        {
+            if ( params.isRunning() )
+            {
+                return taskManager.getRunningTasks();
+            }
+            else
+            {
+                return taskManager.getAllTasks();
+            }
+        }
+        else
+        {
+            if ( params.isRunning() )
+            {
+                return taskTransportRequestSender.getRunningTasks();
+            }
+            else
+            {
+                return taskTransportRequestSender.getAllTasks();
+            }
+        }
     }
 
     @Reference
