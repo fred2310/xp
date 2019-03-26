@@ -31,4 +31,9 @@ class VacuumTasks
     {
         this.tasks.add( task );
     }
+
+    public void remove( final VacuumTask task )
+    {
+        this.tasks.remove( task );
+    }
 }

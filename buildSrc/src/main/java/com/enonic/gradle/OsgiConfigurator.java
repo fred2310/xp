@@ -1,16 +1,21 @@
 package com.enonic.gradle;
 
-import org.dm.gradle.plugins.bundle.BundleExtension;
+import java.util.HashMap;
+import java.util.Map;
+
 import org.gradle.api.Project;
 import org.gradle.api.artifacts.Configuration;
 import org.gradle.api.artifacts.ModuleVersionIdentifier;
 import org.gradle.api.artifacts.ResolvedArtifact;
+import org.gradle.api.tasks.bundling.Jar;
+
+import aQute.bnd.gradle.BundleTaskConvention;
 
 public final class OsgiConfigurator
 {
     private final Project project;
 
-    private BundleExtension ext;
+    private BundleTaskConvention ext;
 
     public OsgiConfigurator( final Project project )
     {
@@ -28,7 +33,8 @@ public final class OsgiConfigurator
 
     private void afterConfigure()
     {
-        this.ext = this.project.getExtensions().getByType( BundleExtension.class );
+        final Jar jar = (Jar) this.project.getTasks().getByName( "jar" );
+        this.ext = (BundleTaskConvention) jar.getConvention().getPlugins().get( "bundle" );
 
         final Configuration libConfig = this.project.getConfigurations().getByName( "include" );
         instruction( "Bundle-ClassPath", getBundleClassPath( libConfig ) );
@@ -39,7 +45,9 @@ public final class OsgiConfigurator
     {
         if ( value != null )
         {
-            this.ext.instruction( name, value.toString() );
+            final Map<String, String> instructions = new HashMap<>();
+            instructions.put( name, value.toString() );
+            this.ext.bnd( instructions );
         }
     }
 

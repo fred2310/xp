@@ -5,7 +5,7 @@ dependencies {
     compile project( ':jaxrs:jaxrs-api' )
 }
 
-bundle {
-    instruction 'Bundle-Name', 'Enonic XP Admin - Api'
-    instruction 'Export-Package', 'com.enonic.xp.admin.*'
+jar {
+    bnd('Bundle-Name': 'Enonic XP Admin - Api',
+        'Export-Package': 'com.enonic.xp.admin.*')
 }
