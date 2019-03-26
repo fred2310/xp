@@ -1,4 +1,4 @@
-//import com.enonic.gradle.OsgiConfigurator
+import com.enonic.gradle.OsgiConfigurator
 
 apply plugin: 'biz.aQute.bnd.builder'
 
@@ -13,4 +13,4 @@ jar {
         'Implementation-Version': project.version)
 }
 
-//OsgiConfigurator.configure( project );
+OsgiConfigurator.configure( project );
