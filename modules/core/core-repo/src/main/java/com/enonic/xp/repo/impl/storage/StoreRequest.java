@@ -89,7 +89,7 @@ public class StoreRequest
 
         private boolean forceRefresh = false;
 
-        private int timeout = 5;
+        private int timeout = 50;
 
         private String id;
 

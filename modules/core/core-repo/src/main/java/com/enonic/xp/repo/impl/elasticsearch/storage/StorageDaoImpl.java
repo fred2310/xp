@@ -19,6 +19,8 @@ import org.elasticsearch.client.Requests;
 import org.elasticsearch.cluster.block.ClusterBlockException;
 import org.osgi.service.component.annotations.Component;
 import org.osgi.service.component.annotations.Reference;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import com.enonic.xp.node.NodeStorageException;
 import com.enonic.xp.repo.impl.StorageSource;
@@ -41,6 +43,8 @@ import com.enonic.xp.repo.impl.storage.StoreRequest;
 public class StorageDaoImpl
     implements StorageDao
 {
+    private final static Logger LOG = LoggerFactory.getLogger( StorageDaoImpl.class );
+
     private Client client;
 
     @Override
@@ -142,8 +146,11 @@ public class StorageDaoImpl
         final IndexResponse indexResponse;
         try
         {
+            final long before = System.currentTimeMillis();
             indexResponse = this.client.index( request ).
                 actionGet( timeout );
+            final long after = System.currentTimeMillis();
+            LOG.info("doStore:" + (after - before) + "ms");
         }
         catch ( ClusterBlockException e )
         {

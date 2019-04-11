@@ -103,8 +103,11 @@ public class IndexServiceInternalImpl
                 setNodes( true ).
                 setRoutingTable( false );
 
+        final long before = System.currentTimeMillis();
         final ClusterStateResponse clusterStateResponse =
             client.admin().cluster().state( requestBuilder.request() ).actionGet( CLUSTER_STATE_TIMEOUT );
+        final long after = System.currentTimeMillis();
+        LOG.info("isMaster:" + (after - before) + "ms");
 
         return clusterStateResponse.getState().nodes().localNodeMaster();
     }
@@ -149,10 +152,13 @@ public class IndexServiceInternalImpl
 
         try
         {
+            final long before = System.currentTimeMillis();
             final CreateIndexResponse createIndexResponse = client.admin().
                 indices().
                 create( createIndexRequest ).
                 actionGet( CREATE_INDEX_TIMEOUT );
+            final long after = System.currentTimeMillis();
+            LOG.info("createIndex:" + (after - before) + "ms");
 
             LOG.info( "Index {} created with status {}", indexName, createIndexResponse.isAcknowledged() );
         }
@@ -173,10 +179,13 @@ public class IndexServiceInternalImpl
             settings( settings.getSettingsAsString() );
         try
         {
+            final long before = System.currentTimeMillis();
             final UpdateSettingsResponse updateSettingsResponse = client.admin().
                 indices().
                 updateSettings( updateSettingsRequest ).
                 actionGet( UPDATE_INDEX_TIMEOUT );
+            final long after = System.currentTimeMillis();
+            LOG.info("updateIndex:" + (after - before) + "ms");
 
             LOG.info( "Index {} updated with status {}", indexName, updateSettingsResponse.isAcknowledged() );
         }
@@ -198,9 +207,12 @@ public class IndexServiceInternalImpl
             ? IndexNameResolver.resolveSearchIndexName( repositoryId )
             : IndexNameResolver.resolveStorageIndexName( repositoryId );
 
+        final long before = System.currentTimeMillis();
         final ImmutableOpenMap<String, Settings> settingsMap =
             this.client.admin().indices().getSettings( new GetSettingsRequest().indices( indexName ) ).actionGet(
                 GET_SETTINGS_TIMEOUT ).getIndexToSettings();
+        final long after = System.currentTimeMillis();
+        LOG.info("getIndexSettings:" + (after - before) + "ms");
 
         return IndexSettings.from( (Map) settingsMap.get( indexName ).getAsMap() );
     }
@@ -217,9 +229,12 @@ public class IndexServiceInternalImpl
             ? IndexNameResolver.resolveSearchIndexName( repositoryId )
             : IndexNameResolver.resolveStorageIndexName( repositoryId );
 
+        final long before = System.currentTimeMillis();
         final ImmutableOpenMap<String, ImmutableOpenMap<String, MappingMetaData>> repoMappings =
             this.client.admin().indices().getMappings( new GetMappingsRequest().indices( indexName ) ).actionGet(
                 GET_SETTINGS_TIMEOUT ).getMappings();
+        final long after = System.currentTimeMillis();
+        LOG.info("getIndexMapping:" + (after - before) + "ms");
 
         final ImmutableOpenMap<String, MappingMetaData> indexTypeMappings = repoMappings.get( indexName );
 
@@ -247,10 +262,13 @@ public class IndexServiceInternalImpl
 
         try
         {
+            final long before = System.currentTimeMillis();
             this.client.admin().
                 indices().
                 putMapping( mappingRequest ).
                 actionGet( APPLY_MAPPING_TIMEOUT );
+            final long after = System.currentTimeMillis();
+            LOG.info("applyMapping:" + (after - before) + "ms");
 
             LOG.info( "Mapping for index {} applied", indexName );
         }
@@ -275,7 +293,10 @@ public class IndexServiceInternalImpl
         IndicesExistsRequest request =
             new IndicesExistsRequestBuilder( this.client.admin().indices(), IndicesExistsAction.INSTANCE ).setIndices( indices ).request();
 
+        final long before = System.currentTimeMillis();
         final IndicesExistsResponse response = client.admin().indices().exists( request ).actionGet( INDEX_EXISTS_TIMEOUT );
+        final long after = System.currentTimeMillis();
+        LOG.info("indicesExists:" + (after - before) + "ms");
 
         return response.isExists();
     }
@@ -347,7 +368,10 @@ public class IndexServiceInternalImpl
 
         try
         {
+            final long before = System.currentTimeMillis();
             client.admin().indices().delete( req ).actionGet( DELETE_INDEX_TIMEOUT );
+            final long after = System.currentTimeMillis();
+            LOG.info("doDeleteIndex:" + (after - before) + "ms");
             LOG.info( "Deleted index {}", indexName );
         }
         catch ( ElasticsearchException e )
