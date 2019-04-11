@@ -129,6 +129,7 @@ public class StorageDaoImpl
                         request();
 
                 final long before = System.currentTimeMillis();
+                LOG.info("before delete");
                 this.client.delete( request ).actionGet( requests.getTimeoutAsString() );
                 final long after = System.currentTimeMillis();
                 LOG.info("delete:" + (after - before) + "ms");
@@ -150,6 +151,7 @@ public class StorageDaoImpl
         try
         {
             final long before = System.currentTimeMillis();
+            LOG.info("before doStore");
             indexResponse = this.client.index( request ).
                 actionGet( timeout );
             final long after = System.currentTimeMillis();

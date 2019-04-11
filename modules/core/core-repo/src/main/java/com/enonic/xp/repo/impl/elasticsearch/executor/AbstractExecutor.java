@@ -22,9 +22,9 @@ abstract class AbstractExecutor
 {
     static final TimeValue defaultScrollTime = new TimeValue( 60, TimeUnit.SECONDS );
 
-    final String storeTimeout = "50s";
+    final String storeTimeout = "10s";
 
-    final String deleteTimeout = "50s";
+    final String deleteTimeout = "5s";
 
     final Client client;
 
@@ -32,7 +32,7 @@ abstract class AbstractExecutor
 
     final String searchPreference = "_local";
 
-    private final String searchTimeout = "50s";
+    private final String searchTimeout = "30s";
 
     AbstractExecutor( final Builder builder )
     {

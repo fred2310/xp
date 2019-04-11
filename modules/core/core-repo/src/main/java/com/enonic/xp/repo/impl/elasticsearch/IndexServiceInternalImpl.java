@@ -63,19 +63,19 @@ public class IndexServiceInternalImpl
 
     private static final String ES_DEFAULT_INDEX_TYPE_NAME = "_default_";
 
-    private final static String DELETE_INDEX_TIMEOUT = "50s";
+    private final static String DELETE_INDEX_TIMEOUT = "5s";
 
-    private final static String CREATE_INDEX_TIMEOUT = "50s";
+    private final static String CREATE_INDEX_TIMEOUT = "5s";
 
-    private final static String UPDATE_INDEX_TIMEOUT = "50s";
+    private final static String UPDATE_INDEX_TIMEOUT = "5s";
 
-    private final static String APPLY_MAPPING_TIMEOUT = "50s";
+    private final static String APPLY_MAPPING_TIMEOUT = "5s";
 
-    private final static String INDEX_EXISTS_TIMEOUT = "50s";
+    private final static String INDEX_EXISTS_TIMEOUT = "5s";
 
-    private final static String CLUSTER_STATE_TIMEOUT = "50s";
+    private final static String CLUSTER_STATE_TIMEOUT = "5s";
 
-    private final static String GET_SETTINGS_TIMEOUT = "50s";
+    private final static String GET_SETTINGS_TIMEOUT = "5s";
 
     private Client client;
 
@@ -104,6 +104,7 @@ public class IndexServiceInternalImpl
                 setRoutingTable( false );
 
         final long before = System.currentTimeMillis();
+        LOG.info("beforeIsMaster");
         final ClusterStateResponse clusterStateResponse =
             client.admin().cluster().state( requestBuilder.request() ).actionGet( CLUSTER_STATE_TIMEOUT );
         final long after = System.currentTimeMillis();
@@ -153,6 +154,7 @@ public class IndexServiceInternalImpl
         try
         {
             final long before = System.currentTimeMillis();
+            LOG.info("before createIndex");
             final CreateIndexResponse createIndexResponse = client.admin().
                 indices().
                 create( createIndexRequest ).
@@ -180,6 +182,7 @@ public class IndexServiceInternalImpl
         try
         {
             final long before = System.currentTimeMillis();
+            LOG.info("before updateIndex");
             final UpdateSettingsResponse updateSettingsResponse = client.admin().
                 indices().
                 updateSettings( updateSettingsRequest ).
@@ -208,6 +211,7 @@ public class IndexServiceInternalImpl
             : IndexNameResolver.resolveStorageIndexName( repositoryId );
 
         final long before = System.currentTimeMillis();
+        LOG.info("before getIndexSettings");
         final ImmutableOpenMap<String, Settings> settingsMap =
             this.client.admin().indices().getSettings( new GetSettingsRequest().indices( indexName ) ).actionGet(
                 GET_SETTINGS_TIMEOUT ).getIndexToSettings();
@@ -230,6 +234,7 @@ public class IndexServiceInternalImpl
             : IndexNameResolver.resolveStorageIndexName( repositoryId );
 
         final long before = System.currentTimeMillis();
+        LOG.info("before getIndexMapping");
         final ImmutableOpenMap<String, ImmutableOpenMap<String, MappingMetaData>> repoMappings =
             this.client.admin().indices().getMappings( new GetMappingsRequest().indices( indexName ) ).actionGet(
                 GET_SETTINGS_TIMEOUT ).getMappings();
@@ -263,6 +268,7 @@ public class IndexServiceInternalImpl
         try
         {
             final long before = System.currentTimeMillis();
+            LOG.info("before applyMapping");
             this.client.admin().
                 indices().
                 putMapping( mappingRequest ).
@@ -294,6 +300,7 @@ public class IndexServiceInternalImpl
             new IndicesExistsRequestBuilder( this.client.admin().indices(), IndicesExistsAction.INSTANCE ).setIndices( indices ).request();
 
         final long before = System.currentTimeMillis();
+        LOG.info("before indicesExists");
         final IndicesExistsResponse response = client.admin().indices().exists( request ).actionGet( INDEX_EXISTS_TIMEOUT );
         final long after = System.currentTimeMillis();
         LOG.info("indicesExists:" + (after - before) + "ms");
@@ -369,6 +376,7 @@ public class IndexServiceInternalImpl
         try
         {
             final long before = System.currentTimeMillis();
+            LOG.info("before doDeleteIndex");
             client.admin().indices().delete( req ).actionGet( DELETE_INDEX_TIMEOUT );
             final long after = System.currentTimeMillis();
             LOG.info("doDeleteIndex:" + (after - before) + "ms");
