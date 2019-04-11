@@ -60,7 +60,7 @@ public abstract class AbstractGetRequest
 
         private String routing;
 
-        private int timeout = 5;
+        private int timeout = 50;
 
         @SuppressWarnings("unchecked")
         public B searchPreference( SearchPreference searchPreference )

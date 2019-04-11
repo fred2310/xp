@@ -63,19 +63,19 @@ public class IndexServiceInternalImpl
 
     private static final String ES_DEFAULT_INDEX_TYPE_NAME = "_default_";
 
-    private final static String DELETE_INDEX_TIMEOUT = "5s";
+    private final static String DELETE_INDEX_TIMEOUT = "50s";
 
-    private final static String CREATE_INDEX_TIMEOUT = "5s";
+    private final static String CREATE_INDEX_TIMEOUT = "50s";
 
-    private final static String UPDATE_INDEX_TIMEOUT = "5s";
+    private final static String UPDATE_INDEX_TIMEOUT = "50s";
 
-    private final static String APPLY_MAPPING_TIMEOUT = "5s";
+    private final static String APPLY_MAPPING_TIMEOUT = "50s";
 
-    private final static String INDEX_EXISTS_TIMEOUT = "5s";
+    private final static String INDEX_EXISTS_TIMEOUT = "50s";
 
-    private final static String CLUSTER_STATE_TIMEOUT = "5s";
+    private final static String CLUSTER_STATE_TIMEOUT = "50s";
 
-    private final static String GET_SETTINGS_TIMEOUT = "5s";
+    private final static String GET_SETTINGS_TIMEOUT = "50s";
 
     private Client client;
 
