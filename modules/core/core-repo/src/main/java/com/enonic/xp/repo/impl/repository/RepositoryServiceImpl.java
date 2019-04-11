@@ -174,7 +174,10 @@ public class RepositoryServiceImpl
     public Repository get( final RepositoryId repositoryId )
     {
         requireAdminRole();
-        return repositoryMap.computeIfAbsent( repositoryId, key -> repositoryEntryService.getRepositoryEntry( repositoryId ) );
+        return repositoryMap.computeIfAbsent( repositoryId, key -> {
+            LOG.info( "RepositoryServiceImpl::get::computeIfAbsent " + repositoryId.toString());
+            return repositoryEntryService.getRepositoryEntry( repositoryId );
+        } );
     }
 
     @Override
@@ -245,12 +248,14 @@ public class RepositoryServiceImpl
     @Override
     public void invalidateAll()
     {
+        LOG.info( "RepositoryServiceImpl::invalidateAll ");
         repositoryMap.clear();
     }
 
     @Override
     public void invalidate( final RepositoryId repositoryId )
     {
+        LOG.info( "RepositoryServiceImpl::invalidate " + repositoryId.toString() );
         repositoryMap.remove( repositoryId );
     }
 
