@@ -58,7 +58,7 @@ public class DeleteRequests
 
         private boolean forceRefresh;
 
-        private int timeout = 5;
+        private int timeout = 50;
 
         private List<String> ids;
 

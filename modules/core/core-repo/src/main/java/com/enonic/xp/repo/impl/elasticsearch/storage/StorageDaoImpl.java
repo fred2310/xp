@@ -128,7 +128,10 @@ public class StorageDaoImpl
                         setRouting( id ). //TODO Java10
                         request();
 
+                final long before = System.currentTimeMillis();
                 this.client.delete( request ).actionGet( requests.getTimeoutAsString() );
+                final long after = System.currentTimeMillis();
+                LOG.info("delete:" + (after - before) + "ms");
             }
             catch ( ClusterBlockException e )
             {
