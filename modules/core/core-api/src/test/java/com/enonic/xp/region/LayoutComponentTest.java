@@ -61,7 +61,6 @@ public class LayoutComponentTest
         assertNotNull( copy );
         assertEquals( source.getType(), copy.getType() );
         assertEquals( source.getRegions(), copy.getRegions() );
-        assertEquals( source.getName(), copy.getName() );
         assertEquals( source.getConfig(), copy.getConfig() );
     }
 
@@ -72,14 +71,12 @@ public class LayoutComponentTest
         config1.addString( "some", "config" );
 
         return LayoutComponent.create().
-            name( "name" ).
             config( config1 ).
             descriptor( DescriptorKey.from( "descriptor" ) ).
             regions( LayoutRegions.create().add( Region.create().
                 name( "region" ).
                 add( TextComponent.create().
                     text( "text" ).
-                    name( "textComponent" ).
                     build() ).
                 build() ).
                 build() ).

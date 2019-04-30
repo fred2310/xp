@@ -13,7 +13,7 @@ public class TextComponent
 
     protected TextComponent( final Builder builder )
     {
-        super( builder );
+        super();
         this.text = builder.text != null ? builder.text : "";
     }
 
@@ -89,21 +89,7 @@ public class TextComponent
 
         private Builder( final TextComponent source )
         {
-            super( source );
             text = source.text;
-        }
-
-        @Override
-        public Builder name( ComponentName value )
-        {
-            this.name = value;
-            return this;
-        }
-
-        public Builder name( String value )
-        {
-            this.name = value != null ? new ComponentName( value ) : null;
-            return this;
         }
 
         public Builder text( String value )

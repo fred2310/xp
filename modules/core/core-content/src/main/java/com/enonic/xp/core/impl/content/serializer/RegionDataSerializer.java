@@ -1,7 +1,7 @@
 package com.enonic.xp.core.impl.content.serializer;
 
 
-import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
 import java.util.stream.Collectors;
 
@@ -11,7 +11,7 @@ import com.enonic.xp.region.Component;
 import com.enonic.xp.region.ComponentPath;
 import com.enonic.xp.region.ComponentType;
 import com.enonic.xp.region.Region;
-import com.enonic.xp.region.RegionDescriptor;
+import com.enonic.xp.region.Regions;
 
 import static com.enonic.xp.core.impl.content.serializer.ComponentDataSerializer.PATH;
 import static com.enonic.xp.core.impl.content.serializer.ComponentDataSerializer.TYPE;
@@ -33,54 +33,41 @@ final class RegionDataSerializer
         }
     }
 
-    public Region fromData( final RegionDescriptor regionDescriptor, final String parentPath, final List<PropertySet> componentsAsData )
+    public Regions fromData( final String parentPath, final List<PropertySet> componentsAsData )
     {
-        final Region.Builder region = Region.create();
+        final HashMap<String, Region.Builder> regionMap = new HashMap<>();
 
-        region.name( regionDescriptor.getName() );
+        final String prefix = ( ComponentPath.DIVIDER.equals( parentPath ) ? "" : parentPath ) + ComponentPath.DIVIDER;
+        final long componentLevel = ( ComponentPath.DIVIDER.equals( parentPath ) ? 0 : getComponentPathDepth( parentPath ) ) + 2;
 
-        final StringBuilder regionPathBuilder = new StringBuilder( ComponentPath.DIVIDER + regionDescriptor.getName() );
+        componentsAsData.stream().filter( componentAsData -> {
+            final String componentPath = componentAsData.getString( PATH );
+            return componentPath.startsWith( prefix ) && getComponentPathDepth( componentPath ) == componentLevel;
+        } ).
+            forEach( componentAsData -> {
+                final String componentPath = componentAsData.getString( PATH );
+                final String[] componentPathArray = componentPath.split( ComponentPath.DIVIDER );
+                final String regionName = componentPathArray[componentPathArray.length - 2];
+                final Component component = getComponent( componentAsData, componentsAsData );
+                Region.Builder region = regionMap.get( regionName );
+                if ( region == null )
+                {
+                    region = Region.create().name( regionName );
+                    regionMap.put( regionName, region );
+                }
+                region.add( component );
+            } );
 
-        if ( !ComponentPath.DIVIDER.equals( parentPath ) )
-        {
-            regionPathBuilder.insert( 0, parentPath );
-        }
-
-        for ( final Component component : getComponents( regionPathBuilder.toString(), componentsAsData ) )
-        {
-            region.add( component );
-        }
-
-        return region.build();
+        final List<Region> regionList = regionMap.values().
+            stream().
+            map( Region.Builder::build ).
+            collect( Collectors.toList() );
+        return Regions.from( regionList );
     }
 
-    private List<Component> getComponents( final String regionPath, final List<PropertySet> componentsAsData )
+    private long getComponentPathDepth( final String componentPath )
     {
-        final List<Component> componentList = new ArrayList<>();
-
-        for ( final PropertySet childComponentData : getRegionChildren( regionPath, componentsAsData ) )
-        {
-            componentList.add( getComponent( childComponentData, componentsAsData ) );
-        }
-
-        return componentList;
-    }
-
-    private List<PropertySet> getRegionChildren( final String regionPath, final List<PropertySet> componentsAsData )
-    {
-        return componentsAsData.stream().filter( item -> isItemChildOf( item, regionPath ) ).collect( Collectors.toList() );
-    }
-
-    private boolean isItemChildOf( final PropertySet item, final String parentPath )
-    {
-        final String itemPath = item.getString( PATH );
-
-        return itemPath.startsWith( parentPath ) && ( getLevel( itemPath ) - getLevel( parentPath ) == 1 );
-    }
-
-    private int getLevel( final String path )
-    {
-        return path.split( ComponentPath.DIVIDER ).length;
+        return componentPath.chars().filter( ch -> ch == '/' ).count();
     }
 
     Component getComponent( final PropertySet componentData, final List<PropertySet> componentsAsData )

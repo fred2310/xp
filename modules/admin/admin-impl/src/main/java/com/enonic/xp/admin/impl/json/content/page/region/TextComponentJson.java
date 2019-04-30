@@ -19,10 +19,9 @@ public class TextComponentJson
     }
 
     @JsonCreator
-    public TextComponentJson( @JsonProperty("name") final String name, @JsonProperty("text") final String text )
+    public TextComponentJson( @JsonProperty("text") final String text )
     {
         super( TextComponent.create().
-            name( name != null ? ComponentName.from( name ) : null ).
             text( text ).
             build() );
 

@@ -21,7 +21,7 @@ public class ImageComponent
 
     public ImageComponent( final Builder builder )
     {
-        super( builder );
+        super();
         this.image = builder.image;
         this.config = builder.config != null ? builder.config : new PropertyTree();
     }
@@ -120,7 +120,6 @@ public class ImageComponent
 
         private Builder( final ImageComponent source )
         {
-            super( source );
             image = source.image;
             config = source.config != null ? source.config.copy() : null;
         }
@@ -128,19 +127,6 @@ public class ImageComponent
         public Builder image( final ContentId value )
         {
             this.image = value;
-            return this;
-        }
-
-        @Override
-        public Builder name( ComponentName value )
-        {
-            this.name = value;
-            return this;
-        }
-
-        public Builder name( String value )
-        {
-            this.name = value != null ? new ComponentName( value ) : null;
             return this;
         }
 

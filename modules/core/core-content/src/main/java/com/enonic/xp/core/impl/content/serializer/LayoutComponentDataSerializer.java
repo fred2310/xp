@@ -12,20 +12,15 @@ import com.enonic.xp.region.LayoutDescriptor;
 import com.enonic.xp.region.LayoutDescriptorService;
 import com.enonic.xp.region.LayoutRegions;
 import com.enonic.xp.region.Region;
+import com.enonic.xp.region.Regions;
 
 final class LayoutComponentDataSerializer
     extends DescriptorBasedComponentDataSerializer<LayoutComponent>
 {
-    private static final String DEFAULT_NAME = "Layout";
-
-    private final LayoutDescriptorService layoutDescriptorService;
-
     private final RegionDataSerializer regionDataSerializer;
 
-    public LayoutComponentDataSerializer( final LayoutDescriptorService layoutDescriptorService,
-                                          final RegionDataSerializer regionDataSerializer )
+    public LayoutComponentDataSerializer( final RegionDataSerializer regionDataSerializer )
     {
-        this.layoutDescriptorService = layoutDescriptorService;
         this.regionDataSerializer = regionDataSerializer;
     }
 
@@ -51,7 +46,7 @@ final class LayoutComponentDataSerializer
 
     public LayoutComponent fromData( final PropertySet layoutData, final List<PropertySet> componentsAsData )
     {
-        final LayoutComponent.Builder layoutComponent = LayoutComponent.create().name( DEFAULT_NAME );
+        final LayoutComponent.Builder layoutComponent = LayoutComponent.create();
 
         final LayoutRegions.Builder layoutRegionsBuilder = LayoutRegions.create();
 
@@ -64,18 +59,9 @@ final class LayoutComponentDataSerializer
             layoutComponent.descriptor( descriptorKey );
             layoutComponent.config( getConfigFromData( specialBlockSet, descriptorKey ) );
 
-            final LayoutDescriptor layoutDescriptor = layoutDescriptorService.getByKey( descriptorKey );
-
             final String layoutPath = layoutData.getString( PATH );
-
-            if ( layoutDescriptor.getRegions() != null && layoutDescriptor.getRegions().numberOfRegions() > 0 )
-            {
-                layoutDescriptor.getRegions().forEach( regionDescriptor -> {
-                    layoutRegionsBuilder.add( regionDataSerializer.fromData( regionDescriptor, layoutPath, componentsAsData ) );
-                } );
-            }
-
-            layoutComponent.name( layoutDescriptor.getDisplayName() );
+            regionDataSerializer.fromData( layoutPath, componentsAsData ).
+                forEach( layoutRegionsBuilder::add );
         }
 
         layoutComponent.regions( layoutRegionsBuilder.build() );

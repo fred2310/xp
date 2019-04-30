@@ -23,11 +23,6 @@ public abstract class ComponentJson<COMPONENT extends Component>
         this.component = component;
     }
 
-    public String getName()
-    {
-        return component.getName() != null ? component.getName().toString() : null;
-    }
-
     @JsonIgnore
     public COMPONENT getComponent()
     {

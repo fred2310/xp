@@ -17,6 +17,7 @@ import com.enonic.xp.name.NamePrettyfier;
 import com.enonic.xp.page.Page;
 import com.enonic.xp.region.Component;
 import com.enonic.xp.region.CreateFragmentParams;
+import com.enonic.xp.region.DescriptorBasedComponent;
 import com.enonic.xp.region.TextComponent;
 import com.enonic.xp.region.TextComponentType;
 import com.enonic.xp.schema.content.ContentTypeName;
@@ -42,14 +43,9 @@ final class CreateFragmentCommand
     public Content execute()
     {
         final Component component = params.getComponent();
-        final String componentName = component.getName().toString();
-        String displayName = componentName;
-        if ( component.getType() instanceof TextComponentType )
-        {
-            displayName = generateDisplayName( (TextComponent) component );
-        }
+        String displayName = generateDisplayName( component );
 
-        final String name = generateUniqueContentName( params.getParent(), "fragment-" + componentName );
+        final String name = generateUniqueContentName( params.getParent(), "fragment-" + displayName );
         final CreateContentParams createContent = CreateContentParams.create().
             parent( params.getParent() ).
             displayName( displayName ).
@@ -72,13 +68,25 @@ final class CreateFragmentCommand
         return this.contentService.update( params );
     }
 
-    private String generateDisplayName( final TextComponent textComponent )
+    private String generateDisplayName( final Component component )
     {
-        final String html = textComponent.getText();
-        String text = StringEscapeUtils.unescapeHtml( html.replaceAll( "\\<[^>]*>", "" ) ).trim();
-        text = text.replaceAll( "(\\t|\\r?\\n)+", " " ).trim();
-        return text.isEmpty() ? textComponent.getName().toString() : StringUtils.abbreviate( text, 40 );
+        if ( component instanceof TextComponent )
+        {
+            final String html = ( (TextComponent) component ).getText();
+            String text = StringEscapeUtils.unescapeHtml( html.replaceAll( "\\<[^>]*>", "" ) ).trim();
+            text = text.replaceAll( "(\\t|\\r?\\n)+", " " ).trim();
+            if ( !text.isEmpty() )
+            {
+                return StringUtils.abbreviate( text, 40 );
+            }
+        }
 
+        if ( component instanceof DescriptorBasedComponent )
+        {
+            return ( (DescriptorBasedComponent) component ).getDescriptor().getName();
+        }
+
+        return component.getType().toString();
     }
 
     private User getCurrentUser()

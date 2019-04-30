@@ -66,19 +66,6 @@ public final class PartComponent
         }
 
         @Override
-        public Builder name( ComponentName value )
-        {
-            this.name = value;
-            return this;
-        }
-
-        public Builder name( String value )
-        {
-            this.name = value != null ? new ComponentName( value ) : null;
-            return this;
-        }
-
-        @Override
         public Builder descriptor( DescriptorKey value )
         {
             this.descriptor = value;

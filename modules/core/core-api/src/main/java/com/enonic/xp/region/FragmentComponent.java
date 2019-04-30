@@ -14,7 +14,7 @@ public class FragmentComponent
 
     public FragmentComponent( final Builder builder )
     {
-        super( builder );
+        super();
         this.fragment = builder.fragment;
     }
 
@@ -82,26 +82,12 @@ public class FragmentComponent
 
         private Builder( final FragmentComponent source )
         {
-            super( source );
             fragment = source.fragment;
         }
 
         public Builder fragment( final ContentId value )
         {
             this.fragment = value;
-            return this;
-        }
-
-        @Override
-        public Builder name( ComponentName value )
-        {
-            this.name = value;
-            return this;
-        }
-
-        public Builder name( String value )
-        {
-            this.name = value != null ? new ComponentName( value ) : null;
             return this;
         }
 

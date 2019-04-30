@@ -14,18 +14,9 @@ import com.enonic.xp.util.Reference;
 final class ImageComponentDataSerializer
     extends ComponentDataSerializer<ImageComponent>
 {
-    private final ContentService contentService;
-
     private static final String ID = "id";
 
     private static final String CAPTION = "caption";
-
-    private static final String DEFAULT_NAME = "Image";
-
-    public ImageComponentDataSerializer( final ContentService contentService )
-    {
-        this.contentService = contentService;
-    }
 
     @Override
     public void applyComponentToData( final ImageComponent component, final PropertySet asData )
@@ -48,7 +39,7 @@ final class ImageComponentDataSerializer
     @Override
     public ImageComponent fromData( final PropertySet data )
     {
-        ImageComponent.Builder component = ImageComponent.create().name( DEFAULT_NAME );
+        ImageComponent.Builder component = ImageComponent.create();
 
         final PropertySet specialBlockSet = data.getSet( ImageComponentType.INSTANCE.toString() );
 
@@ -58,7 +49,6 @@ final class ImageComponentDataSerializer
             {
                 final ContentId contentId = ContentId.from( specialBlockSet.getString( ID ) );
                 component.image( contentId );
-                component.name( getContentDisplayName( contentId ) );
             }
 
             if ( specialBlockSet.hasProperty( CAPTION ) )
@@ -70,18 +60,5 @@ final class ImageComponentDataSerializer
         }
 
         return component.build();
-    }
-
-    private String getContentDisplayName( final ContentId contentId )
-    {
-        try
-        {
-            final Content content = contentService.getById( contentId );
-            return content.getDisplayName();
-        }
-        catch ( final ContentNotFoundException e )
-        {
-            return DEFAULT_NAME;
-        }
     }
 }

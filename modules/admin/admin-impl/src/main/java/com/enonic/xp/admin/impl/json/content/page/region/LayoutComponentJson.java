@@ -20,12 +20,11 @@ public class LayoutComponentJson
     private final LayoutRegionsJson regionsJson;
 
     @JsonCreator
-    public LayoutComponentJson( @JsonProperty("name") final String name, @JsonProperty("descriptor") final String descriptor,
+    public LayoutComponentJson( @JsonProperty("descriptor") final String descriptor,
                                 @JsonProperty("config") final List<PropertyArrayJson> config,
                                 final @JsonProperty("regions") List<RegionJson> regions )
     {
         super( LayoutComponent.create().
-            name( name != null ? ComponentName.from( name ) : null ).
             descriptor( descriptor != null ? DescriptorKey.from( descriptor ) : null ).
             config( config != null ? PropertyTreeJson.fromJson( config ) : null ).
             regions( regions != null ? new LayoutRegionsJson( regions ).getLayoutRegions() : null ).

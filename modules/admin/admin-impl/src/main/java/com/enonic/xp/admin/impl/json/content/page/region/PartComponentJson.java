@@ -24,11 +24,10 @@ public class PartComponentJson
     }
 
     @JsonCreator
-    public PartComponentJson( @JsonProperty("name") final String name, @JsonProperty("descriptor") final String descriptor,
+    public PartComponentJson( @JsonProperty("descriptor") final String descriptor,
                               @JsonProperty("config") final List<PropertyArrayJson> config )
     {
         super( PartComponent.create().
-            name( name != null ? ComponentName.from( name ) : null ).
             descriptor( descriptor != null ? DescriptorKey.from( descriptor ) : null ).
             config( config != null ? PropertyTreeJson.fromJson( config ) : null ).
             build() );

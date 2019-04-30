@@ -18,11 +18,10 @@ public class FragmentComponentJson
     private final FragmentComponent fragment;
 
     @JsonCreator
-    public FragmentComponentJson( @JsonProperty("name") final String name, @JsonProperty("config") final List<PropertyArrayJson> config,
+    public FragmentComponentJson( @JsonProperty("config") final List<PropertyArrayJson> config,
                                   @JsonProperty("fragment") final String fragment )
     {
         super( FragmentComponent.create().
-            name( name != null ? ComponentName.from( name ) : null ).
             fragment( fragment != null ? ContentId.from( fragment ) : null ).
             build() );
 

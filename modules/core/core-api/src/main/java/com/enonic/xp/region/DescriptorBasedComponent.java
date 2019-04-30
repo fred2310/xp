@@ -17,7 +17,7 @@ public abstract class DescriptorBasedComponent
 
     protected DescriptorBasedComponent( final Builder builder )
     {
-        super( builder );
+        super();
         this.descriptor = builder.descriptor;
         this.config = builder.config != null ? builder.config : new PropertyTree();
     }
@@ -83,16 +83,8 @@ public abstract class DescriptorBasedComponent
 
         protected Builder( final DescriptorBasedComponent source )
         {
-            super( source );
             this.config = source.getConfig() != null ? source.getConfig().copy() : null;
             this.descriptor = source.getDescriptor();
-        }
-
-        @Override
-        public Builder name( ComponentName value )
-        {
-            this.name = value;
-            return this;
         }
 
         public Builder descriptor( DescriptorKey value )

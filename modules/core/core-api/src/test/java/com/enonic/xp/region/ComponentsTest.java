@@ -35,12 +35,10 @@ public class ComponentsTest
         partConfig.addLong( "width", 150L );
 
         PartComponent partComponent = PartComponent.create().
-            name( "my-part" ).
             descriptor( DescriptorKey.from( "mainmodule:partTemplateName" ) ).
             config( partConfig ).
             build();
 
-        assertEquals( "my-part", partComponent.getName().toString() );
         assertEquals( "partTemplateName", partComponent.getDescriptor().getName() );
         assertEquals( "mainmodule", partComponent.getDescriptor().getApplicationKey().toString() );
         assertEquals( PartComponentType.INSTANCE, partComponent.getType() );
@@ -53,12 +51,10 @@ public class ComponentsTest
         layoutConfig.addLong( "columns", 2L );
 
         LayoutComponent layoutComponent = LayoutComponent.create().
-            name( "my-template" ).
             descriptor( DescriptorKey.from( "mainmodule:layoutTemplateName" ) ).
             config( layoutConfig ).
             build();
 
-        assertEquals( "my-template", layoutComponent.getName().toString() );
         assertEquals( "layoutTemplateName", layoutComponent.getDescriptor().getName() );
         assertEquals( "mainmodule", layoutComponent.getDescriptor().getApplicationKey().toString() );
     }

@@ -36,7 +36,6 @@ class GetComponentByNameCommand
         if ( partDescriptor != null && componentExists( partDescriptor.getComponentPath() ) )
         {
             return PartComponent.create().
-                name( this.name ).
                 descriptor( partDescriptor.getKey() ).
                 build();
         }
@@ -44,7 +43,6 @@ class GetComponentByNameCommand
         if ( layoutDescriptor != null && componentExists( layoutDescriptor.getComponentPath() ) )
         {
             return LayoutComponent.create().
-                name( this.name ).
                 descriptor( layoutDescriptor.getKey() ).
                 build();
         }

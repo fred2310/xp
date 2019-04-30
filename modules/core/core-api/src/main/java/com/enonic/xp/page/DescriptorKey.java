@@ -7,6 +7,7 @@ import org.apache.commons.lang.StringUtils;
 import com.google.common.annotations.Beta;
 
 import com.enonic.xp.app.ApplicationKey;
+import com.enonic.xp.region.RegionDescriptor;
 import com.enonic.xp.util.CharacterChecker;
 
 @Beta

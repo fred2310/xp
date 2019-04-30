@@ -26,14 +26,14 @@ public final class ComponentDataSerializerProvider
 
     private final RegionDataSerializer regionDataSerializer;
 
-    private ComponentDataSerializerProvider( final Builder builder )
+    private ComponentDataSerializerProvider()
     {
         this.regionDataSerializer = new RegionDataSerializer( this );
-        this.partDataSerializer = new PartComponentDataSerializer( builder.partDescriptorService );
+        this.partDataSerializer = new PartComponentDataSerializer( );
         this.textDataSerializer = new TextComponentDataSerializer();
-        this.layoutDataSerializer = new LayoutComponentDataSerializer( builder.layoutDescriptorService, this.regionDataSerializer );
-        this.imageDataSerializer = new ImageComponentDataSerializer( builder.contentService );
-        this.fragmentDataSerializer = new FragmentComponentDataSerializer( builder.contentService );
+        this.layoutDataSerializer = new LayoutComponentDataSerializer(this.regionDataSerializer );
+        this.imageDataSerializer = new ImageComponentDataSerializer( );
+        this.fragmentDataSerializer = new FragmentComponentDataSerializer( );
     }
 
     public ComponentDataSerializer getDataSerializer( final ComponentType componentType )
@@ -76,41 +76,9 @@ public final class ComponentDataSerializerProvider
 
     public static class Builder
     {
-        private PartDescriptorService partDescriptorService;
-
-        private LayoutDescriptorService layoutDescriptorService;
-
-        private ContentService contentService;
-
-        public Builder partDescriptorService( final PartDescriptorService value )
-        {
-            this.partDescriptorService = value;
-            return this;
-        }
-
-        public Builder layoutDescriptorService( final LayoutDescriptorService value )
-        {
-            this.layoutDescriptorService = value;
-            return this;
-        }
-
-        public Builder contentService( final ContentService value )
-        {
-            this.contentService = value;
-            return this;
-        }
-
-        void validate()
-        {
-            Preconditions.checkNotNull( partDescriptorService );
-            Preconditions.checkNotNull( layoutDescriptorService );
-            Preconditions.checkNotNull( contentService );
-        }
-
         public ComponentDataSerializerProvider build()
         {
-            validate();
-            return new ComponentDataSerializerProvider( this );
+            return new ComponentDataSerializerProvider();
         }
     }
 

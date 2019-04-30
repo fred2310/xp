@@ -7,8 +7,6 @@ import java.util.Map;
 
 import org.apache.commons.lang.StringUtils;
 
-import com.google.common.base.Preconditions;
-
 import com.enonic.xp.attachment.Attachment;
 import com.enonic.xp.attachment.AttachmentNames;
 import com.enonic.xp.attachment.AttachmentSerializer;
@@ -20,7 +18,6 @@ import com.enonic.xp.content.ContentId;
 import com.enonic.xp.content.ContentIds;
 import com.enonic.xp.content.ContentPropertyNames;
 import com.enonic.xp.content.ContentPublishInfo;
-import com.enonic.xp.content.ContentService;
 import com.enonic.xp.content.CreateContentTranslatorParams;
 import com.enonic.xp.content.ExtraDatas;
 import com.enonic.xp.content.UpdateContentTranslatorParams;
@@ -29,9 +26,6 @@ import com.enonic.xp.data.PropertyTree;
 import com.enonic.xp.icon.Thumbnail;
 import com.enonic.xp.node.NodeId;
 import com.enonic.xp.page.Page;
-import com.enonic.xp.page.PageDescriptorService;
-import com.enonic.xp.region.LayoutDescriptorService;
-import com.enonic.xp.region.PartDescriptorService;
 import com.enonic.xp.schema.content.ContentTypeName;
 import com.enonic.xp.security.PrincipalKey;
 import com.enonic.xp.util.BinaryReference;
@@ -64,13 +58,9 @@ public class ContentDataSerializer
 
     private ExtraDataSerializer extraDataSerializer;
 
-    private ContentDataSerializer( final Builder builder )
+    private ContentDataSerializer()
     {
         this.pageDataSerializer = PageDataSerializer.create().
-            pageDescriptorService( builder.pageDescriptorService ).
-            partDescriptorService( builder.partDescriptorService ).
-            layoutDescriptorService( builder.layoutDescriptorService ).
-            contentService( builder.contentService ).
             build();
 
         this.extraDataSerializer = new ExtraDataSerializer();
@@ -387,50 +377,9 @@ public class ContentDataSerializer
 
     public static class Builder
     {
-        private PageDescriptorService pageDescriptorService;
-
-        private PartDescriptorService partDescriptorService;
-
-        private LayoutDescriptorService layoutDescriptorService;
-
-        private ContentService contentService;
-
-        public Builder pageDescriptorService( final PageDescriptorService value )
-        {
-            this.pageDescriptorService = value;
-            return this;
-        }
-
-        public Builder partDescriptorService( final PartDescriptorService value )
-        {
-            this.partDescriptorService = value;
-            return this;
-        }
-
-        public Builder layoutDescriptorService( final LayoutDescriptorService value )
-        {
-            this.layoutDescriptorService = value;
-            return this;
-        }
-
-        public Builder contentService( final ContentService value )
-        {
-            this.contentService = value;
-            return this;
-        }
-
-        void validate()
-        {
-            Preconditions.checkNotNull( pageDescriptorService );
-            Preconditions.checkNotNull( partDescriptorService );
-            Preconditions.checkNotNull( layoutDescriptorService );
-            Preconditions.checkNotNull( contentService );
-        }
-
         public ContentDataSerializer build()
         {
-            validate();
-            return new ContentDataSerializer( this );
+            return new ContentDataSerializer();
         }
     }
 

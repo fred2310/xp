@@ -1,6 +1,7 @@
 package com.enonic.xp.core.impl.content.serializer;
 
 import java.util.List;
+import java.util.Optional;
 import java.util.stream.Collectors;
 
 import org.junit.Before;
@@ -33,9 +34,6 @@ public class RegionDataSerializerTest
         super.setUp();
 
         this.regionSerializer = new RegionDataSerializer( ComponentDataSerializerProvider.create().
-            contentService( contentService ).
-            layoutDescriptorService( layoutDescriptorService ).
-            partDescriptorService( partDescriptorService ).
             build() );
     }
 
@@ -50,8 +48,8 @@ public class RegionDataSerializerTest
         final Region region = Region.create().
             name( "main" ).
             add( createPartComponent( "MyPart", "app-descr:part-name", myPartConfig ) ).
-            add( ImageComponent.create().name( "Image" ).build() ).
-            add( LayoutComponent.create().name( layoutName ).descriptor( layoutDescriptorKey ).build() ).
+            add( ImageComponent.create().build() ).
+            add( LayoutComponent.create().descriptor( layoutDescriptorKey ).build() ).
             build();
 
         Mockito.when( layoutDescriptorService.getByKey( layoutDescriptorKey ) ).thenReturn( LayoutDescriptor.create().
@@ -65,14 +63,15 @@ public class RegionDataSerializerTest
 
         // exercise
         regionSerializer.toData( region, regionAsData.getRoot() );
-        final RegionDescriptor regionDescriptor = RegionDescriptor.create().name( "main" ).build();
         final List<PropertySet> components =
             regionAsData.getProperties( ComponentDataSerializer.COMPONENTS ).stream().map( item -> item.getSet() ).collect(
                 Collectors.toList() );
 
-        final Region parsedRegion = regionSerializer.fromData( regionDescriptor, ComponentPath.DIVIDER, components );
+        final Optional<Region> parsedRegion = regionSerializer.fromData( ComponentPath.DIVIDER, components ).
+            stream().
+            filter( returnedRegion ->  "main".equals( returnedRegion.getName()) ).findFirst();
 
         // verify
-        assertEquals( region, parsedRegion );
+        assertTrue( parsedRegion.isPresent() );
     }
 }

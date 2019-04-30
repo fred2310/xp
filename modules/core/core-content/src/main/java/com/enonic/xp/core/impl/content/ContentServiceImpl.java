@@ -187,10 +187,6 @@ public class ContentServiceImpl
             initialize();
 
         this.contentDataSerializer = ContentDataSerializer.create().
-            contentService( this ).
-            layoutDescriptorService( layoutDescriptorService ).
-            pageDescriptorService( pageDescriptorService ).
-            partDescriptorService( partDescriptorService ).
             build();
 
         this.translator = new ContentNodeTranslator( nodeService, contentDataSerializer );

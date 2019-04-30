@@ -112,7 +112,6 @@ public final class LayoutComponent
     {
         return MoreObjects.toStringHelper( this ).
             add( "type", getType() ).
-            add( "name", getName() ).
             add( "path", getPath() ).
             add( "regions", getRegions() ).
             toString();
@@ -132,19 +131,6 @@ public final class LayoutComponent
         {
             super( source );
             regions = source.regions.copy();
-        }
-
-        @Override
-        public Builder name( ComponentName value )
-        {
-            this.name = value;
-            return this;
-        }
-
-        public Builder name( String value )
-        {
-            this.name = value != null ? new ComponentName( value ) : null;
-            return this;
         }
 
         public Builder descriptor( String value )

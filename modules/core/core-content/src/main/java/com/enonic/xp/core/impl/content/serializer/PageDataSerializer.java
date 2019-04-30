@@ -4,23 +4,15 @@ import java.util.Comparator;
 import java.util.List;
 import java.util.stream.Collectors;
 
-import com.google.common.base.Preconditions;
-
-import com.enonic.xp.content.ContentService;
 import com.enonic.xp.data.Property;
 import com.enonic.xp.data.PropertySet;
 import com.enonic.xp.page.DescriptorKey;
 import com.enonic.xp.page.Page;
-import com.enonic.xp.page.PageDescriptor;
-import com.enonic.xp.page.PageDescriptorService;
 import com.enonic.xp.page.PageRegions;
 import com.enonic.xp.page.PageTemplateKey;
 import com.enonic.xp.region.Component;
 import com.enonic.xp.region.ComponentPath;
-import com.enonic.xp.region.LayoutDescriptorService;
-import com.enonic.xp.region.PartDescriptorService;
 import com.enonic.xp.region.Region;
-import com.enonic.xp.region.RegionDescriptors;
 import com.enonic.xp.util.Reference;
 
 import static com.enonic.xp.content.ContentPropertyNames.PAGE;
@@ -41,16 +33,9 @@ final class PageDataSerializer
 
     private final ComponentDataSerializerProvider componentDataSerializerProvider;
 
-    private final PageDescriptorService pageDescriptorService;
-
-    private PageDataSerializer( final Builder builder )
+    private PageDataSerializer()
     {
-        this.pageDescriptorService = builder.pageDescriptorService;
-
         this.componentDataSerializerProvider = ComponentDataSerializerProvider.create().
-            contentService( builder.contentService ).
-            layoutDescriptorService( builder.layoutDescriptorService ).
-            partDescriptorService( builder.partDescriptorService ).
             build();
     }
 
@@ -189,7 +174,7 @@ final class PageDataSerializer
             final DescriptorKey descriptorKey = DescriptorKey.from( specialBlockSet.getString( DESCRIPTOR ) );
             page.descriptor( descriptorKey );
             page.config( getConfigFromData( specialBlockSet, descriptorKey ) );
-            page.regions( getPageRegions( descriptorKey, componentsAsData ) );
+            page.regions( getPageRegions( componentsAsData ) );
         }
 
         if ( specialBlockSet.isNotNull( TEMPLATE ) )
@@ -205,25 +190,11 @@ final class PageDataSerializer
         return page.build();
     }
 
-    private PageRegions getPageRegions( final DescriptorKey descriptorKey, final List<PropertySet> componentsAsData )
+    private PageRegions getPageRegions( final List<PropertySet> componentsAsData )
     {
-        final PageDescriptor pageDescriptor = pageDescriptorService.getByKey( descriptorKey );
-
-        final RegionDescriptors regionDescriptors = pageDescriptor.getRegions();
-
-        if ( regionDescriptors.numberOfRegions() == 0 )
-        {
-            return null;
-        }
-
         final PageRegions.Builder pageRegionsBuilder = PageRegions.create();
-
-        regionDescriptors.forEach( regionDescriptor -> {
-            pageRegionsBuilder.add(
-                componentDataSerializerProvider.getRegionDataSerializer().fromData( regionDescriptor, ComponentPath.DIVIDER,
-                                                                                    componentsAsData ) );
-        } );
-
+        componentDataSerializerProvider.getRegionDataSerializer().
+            fromData( ComponentPath.DIVIDER, componentsAsData ).forEach( pageRegionsBuilder::add );
         return pageRegionsBuilder.build();
     }
 
@@ -234,50 +205,9 @@ final class PageDataSerializer
 
     public static class Builder
     {
-        private PageDescriptorService pageDescriptorService;
-
-        private PartDescriptorService partDescriptorService;
-
-        private LayoutDescriptorService layoutDescriptorService;
-
-        private ContentService contentService;
-
-        public Builder pageDescriptorService( final PageDescriptorService value )
-        {
-            this.pageDescriptorService = value;
-            return this;
-        }
-
-        public Builder partDescriptorService( final PartDescriptorService value )
-        {
-            this.partDescriptorService = value;
-            return this;
-        }
-
-        public Builder layoutDescriptorService( final LayoutDescriptorService value )
-        {
-            this.layoutDescriptorService = value;
-            return this;
-        }
-
-        public Builder contentService( final ContentService value )
-        {
-            this.contentService = value;
-            return this;
-        }
-
-        void validate()
-        {
-            Preconditions.checkNotNull( pageDescriptorService );
-            Preconditions.checkNotNull( partDescriptorService );
-            Preconditions.checkNotNull( layoutDescriptorService );
-            Preconditions.checkNotNull( contentService );
-        }
-
         public PageDataSerializer build()
         {
-            validate();
-            return new PageDataSerializer( this );
+            return new PageDataSerializer();
         }
     }
 }
