@@ -80,7 +80,6 @@ public class NodeStorageServiceImplTest
     }
 
     @Test
-    @Ignore
     public void testGetNode()
     {
         final NodePath nodePath = NodePath.create( "path" ).build();
@@ -99,9 +98,8 @@ public class NodeStorageServiceImplTest
                     build() ).build() ).
             build();
 
-        when( versionService.getVersion( any( NodeId.class ), any( NodeVersionId.class ), any( InternalContext.class ) ) ).
-            thenReturn( nodeVersionMetadata );
-        when( nodeVersionService.get( any( NodeVersionKey.class ), any( InternalContext.class ) ) ).thenReturn( nodeVersion );
+        when( versionService.getVersion( nodeId, nodeVersionId, context ) ).thenReturn( nodeVersionMetadata );
+        when( nodeVersionService.get( versionKey, context ) ).thenReturn( nodeVersion );
 
         final Node result = instance.getNode( nodeId, nodeVersionId, context );
 
