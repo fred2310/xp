@@ -89,11 +89,11 @@ public class NodeStorageServiceImplTest
     @Test
     public void testGetNode()
     {
-        final User admin = User.create().key( PrincipalKey.ofSuperUser() ).login( PrincipalKey.ofSuperUser().getId() ).build();
-        final AuthenticationInfo authInfo = AuthenticationInfo.create().principals( RoleKeys.ADMIN ).user( admin ).build();
-        final Context appContext  = ContextBuilder.from( ContextAccessor.current() ).authInfo( authInfo ).build();
-
-        appContext.callWith( () -> {
+//        final User admin = User.create().key( PrincipalKey.ofSuperUser() ).login( PrincipalKey.ofSuperUser().getId() ).build();
+//        final AuthenticationInfo authInfo = AuthenticationInfo.create().principals( RoleKeys.ADMIN ).user( admin ).build();
+//        final Context appContext  = ContextBuilder.from( ContextAccessor.current() ).authInfo( authInfo ).build();
+//
+//        appContext.callWith( () -> {
             final NodePath nodePath = NodePath.create( "path" ).build();
 
             final NodeVersionMetadata nodeVersionMetadata = NodeVersionMetadata.create().
@@ -105,7 +105,7 @@ public class NodeStorageServiceImplTest
             final NodeVersion nodeVersion = NodeVersion.create().
                 permissions( AccessControlList.create().
                     add( AccessControlEntry.create().
-                        principal( PrincipalKey.ofAnonymous() ).
+                        principal( RoleKeys.EVERYONE ).
                         allow( Permission.READ ).
                         build() ).build() ).
                 build();
@@ -124,8 +124,8 @@ public class NodeStorageServiceImplTest
                 get( any( NodeVersionKey.class ), any( InternalContext.class ) );
             verifyNoMoreInteractions( versionService, nodeVersionService );
 
-            return null;
-        } );
+//            return null;
+//        } );
     }
 
     @Test
@@ -164,7 +164,6 @@ public class NodeStorageServiceImplTest
     }
 
     @Test
-    @Ignore
     public void testGetNode_ByPath()
     {
         final NodeBranchEntry nodeBranchEntry = NodeBranchEntry.create().
@@ -182,7 +181,7 @@ public class NodeStorageServiceImplTest
         final NodeVersion nodeVersion = NodeVersion.create().
             permissions( AccessControlList.create().
                 add( AccessControlEntry.create().
-                    principal( PrincipalKey.ofAnonymous() ).
+                    principal( RoleKeys.EVERYONE ).
                     allow( Permission.READ ).
                     build() ).build() ).
             build();
