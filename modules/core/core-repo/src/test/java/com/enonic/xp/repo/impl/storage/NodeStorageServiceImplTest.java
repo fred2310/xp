@@ -2,11 +2,7 @@ package com.enonic.xp.repo.impl.storage;
 
 import org.junit.Before;
 import org.junit.Test;
-import org.junit.runner.RunWith;
-import org.mockito.InjectMocks;
-import org.mockito.Mock;
 import org.mockito.Mockito;
-import org.mockito.runners.MockitoJUnitRunner;
 
 import com.enonic.xp.blob.NodeVersionKey;
 import com.enonic.xp.branch.Branch;
@@ -35,20 +31,15 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoMoreInteractions;
 import static org.mockito.Mockito.when;
 
-@RunWith(MockitoJUnitRunner.class)
 public class NodeStorageServiceImplTest
 {
 
-    @InjectMocks
     private NodeStorageServiceImpl instance;
 
-    @Mock
     private VersionService versionService;
 
-    @Mock
     private NodeVersionService nodeVersionService;
 
-    @Mock
     private BranchService branchService;
 
     private NodeId nodeId;
@@ -64,6 +55,15 @@ public class NodeStorageServiceImplTest
     @Before
     public void setUp()
     {
+        versionService = Mockito.mock( VersionService.class );
+        nodeVersionService = Mockito.mock( NodeVersionService.class );
+        branchService = Mockito.mock( BranchService.class );
+
+        instance = new NodeStorageServiceImpl();
+        instance.setBranchService( branchService );
+        instance.setVersionService( versionService );
+        instance.setNodeVersionService( nodeVersionService );
+        
         nodeId = NodeId.from( "000-000-000-000" );
 
         nodePath = NodePath.create( "/path/to/node" ).build();
