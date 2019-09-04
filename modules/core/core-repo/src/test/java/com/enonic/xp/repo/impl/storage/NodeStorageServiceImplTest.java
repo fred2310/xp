@@ -7,6 +7,9 @@ import org.mockito.Mockito;
 
 import com.enonic.xp.blob.NodeVersionKey;
 import com.enonic.xp.branch.Branch;
+import com.enonic.xp.context.Context;
+import com.enonic.xp.context.ContextAccessor;
+import com.enonic.xp.context.ContextBuilder;
 import com.enonic.xp.node.Node;
 import com.enonic.xp.node.NodeBranchEntry;
 import com.enonic.xp.node.NodeId;
@@ -21,9 +24,13 @@ import com.enonic.xp.repo.impl.node.dao.NodeVersionService;
 import com.enonic.xp.repo.impl.version.VersionService;
 import com.enonic.xp.repository.RepositoryId;
 import com.enonic.xp.security.PrincipalKey;
+import com.enonic.xp.security.RoleKeys;
+import com.enonic.xp.security.SystemConstants;
+import com.enonic.xp.security.User;
 import com.enonic.xp.security.acl.AccessControlEntry;
 import com.enonic.xp.security.acl.AccessControlList;
 import com.enonic.xp.security.acl.Permission;
+import com.enonic.xp.security.auth.AuthenticationInfo;
 
 import static org.junit.Assert.*;
 import static org.mockito.Matchers.any;
@@ -82,34 +89,43 @@ public class NodeStorageServiceImplTest
     @Test
     public void testGetNode()
     {
-        final NodePath nodePath = NodePath.create( "path" ).build();
+        final User admin = User.create().key( PrincipalKey.ofSuperUser() ).login( PrincipalKey.ofSuperUser().getId() ).build();
+        final AuthenticationInfo authInfo = AuthenticationInfo.create().principals( RoleKeys.ADMIN ).user( admin ).build();
+        final Context appContext  = ContextBuilder.from( ContextAccessor.current() ).authInfo( authInfo ).build();
 
-        final NodeVersionMetadata nodeVersionMetadata = NodeVersionMetadata.create().
-            nodeVersionId( nodeVersionId ).
-            nodeVersionKey( versionKey ).
-            nodePath( nodePath ).
-            build();
+        appContext.callWith( () -> {
+            final NodePath nodePath = NodePath.create( "path" ).build();
 
-        final NodeVersion nodeVersion = NodeVersion.create().
-            permissions( AccessControlList.create().
-                add( AccessControlEntry.create().
-                    principal( PrincipalKey.ofAnonymous() ).
-                    allow( Permission.READ ).
-                    build() ).build() ).
-            build();
+            final NodeVersionMetadata nodeVersionMetadata = NodeVersionMetadata.create().
+                nodeVersionId( nodeVersionId ).
+                nodeVersionKey( versionKey ).
+                nodePath( nodePath ).
+                build();
 
-        when( versionService.getVersion( nodeId, nodeVersionId, context ) ).thenReturn( nodeVersionMetadata );
-        when( nodeVersionService.get( versionKey, context ) ).thenReturn( nodeVersion );
+            final NodeVersion nodeVersion = NodeVersion.create().
+                permissions( AccessControlList.create().
+                    add( AccessControlEntry.create().
+                        principal( PrincipalKey.ofAnonymous() ).
+                        allow( Permission.READ ).
+                        build() ).build() ).
+                build();
 
-        final Node result = instance.getNode( nodeId, nodeVersionId, context );
+            when( versionService.getVersion( nodeId, nodeVersionId, context ) ).thenReturn( nodeVersionMetadata );
+            when( nodeVersionService.get( versionKey, context ) ).thenReturn( nodeVersion );
 
-        assertNotNull( result );
 
-        verify( versionService, times( 1 ) ).
-            getVersion( any( NodeId.class ), any( NodeVersionId.class ), any( InternalContext.class ) );
-        verify( nodeVersionService, times( 1 ) ).
-            get( any( NodeVersionKey.class ), any( InternalContext.class ) );
-        verifyNoMoreInteractions( versionService, nodeVersionService );
+            final Node result = instance.getNode( nodeId, nodeVersionId, context );
+
+            assertNotNull( result );
+
+            verify( versionService, times( 1 ) ).
+                getVersion( any( NodeId.class ), any( NodeVersionId.class ), any( InternalContext.class ) );
+            verify( nodeVersionService, times( 1 ) ).
+                get( any( NodeVersionKey.class ), any( InternalContext.class ) );
+            verifyNoMoreInteractions( versionService, nodeVersionService );
+
+            return null;
+        } );
     }
 
     @Test
