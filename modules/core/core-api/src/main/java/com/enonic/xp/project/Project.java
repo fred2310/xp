@@ -32,6 +32,26 @@ public final class Project
         return new Builder( source );
     }
 
+    public ProjectName getName()
+    {
+        return name;
+    }
+
+    public String getDisplayName()
+    {
+        return displayName;
+    }
+
+    public String getDescription()
+    {
+        return description;
+    }
+
+    public Attachment getIcon()
+    {
+        return icon;
+    }
+
     @Override
     public boolean equals( Object o )
     {

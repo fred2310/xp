@@ -12,7 +12,9 @@ import com.enonic.xp.data.ValueFactory;
 import com.enonic.xp.node.*;
 import com.enonic.xp.project.*;
 import com.enonic.xp.query.filter.ValueFilter;
+import com.enonic.xp.repository.RepositoryId;
 import com.enonic.xp.repository.RepositoryService;
+import com.enonic.xp.security.SystemConstants;
 import com.enonic.xp.util.Exceptions;
 import org.osgi.service.component.annotations.Component;
 import org.osgi.service.component.annotations.Reference;
@@ -21,6 +23,7 @@ import java.io.IOException;
 import java.text.MessageFormat;
 import java.util.List;
 import java.util.Objects;
+import java.util.concurrent.Callable;
 import java.util.stream.Collectors;
 
 @Component(immediate = true)
@@ -33,7 +36,7 @@ public class ProjectServiceImpl implements ProjectService
     @Override
     public Projects list()
     {
-        return createContext().callWith( this::doList );
+        return callWithContext( this::doList );
     }
 
     private Projects doList()
@@ -63,7 +66,7 @@ public class ProjectServiceImpl implements ProjectService
     @Override
     public Project get( ProjectName projectName )
     {
-        return createContext().callWith( () -> doGet( projectName ) );
+        return callWithContext( () -> doGet( projectName ) );
     }
 
     private Project doGet( final ProjectName name )
@@ -75,7 +78,7 @@ public class ProjectServiceImpl implements ProjectService
     @Override
     public Project create( CreateProjectParams params )
     {
-        return createContext().callWith( () -> doCreate( params ) );
+        return callWithContext( () -> doCreate( params ) );
     }
 
     private Project doCreate( final CreateProjectParams params )
@@ -104,7 +107,7 @@ public class ProjectServiceImpl implements ProjectService
     @Override
     public Project modify( ModifyProjectParams params )
     {
-        return createContext().callWith( () -> doModify( params ) );
+        return callWithContext( () -> doModify( params ) );
     }
 
     private Project doModify( final ModifyProjectParams params )
@@ -137,7 +140,7 @@ public class ProjectServiceImpl implements ProjectService
     @Override
     public Project delete( ProjectName projectName )
     {
-        return createContext().callWith( () -> doDelete( projectName ) );
+        return callWithContext(() -> doDelete( projectName ) );
     }
 
     private Project doDelete( final ProjectName name )
@@ -156,6 +159,10 @@ public class ProjectServiceImpl implements ProjectService
         nodeService.deleteById( node.id() );
 
         return toProject( node );
+    }
+
+    private RepositoryId toRepositoryId(final ProjectName projectName) {
+        return RepositoryId.from( ContentConstants.CONTENT_REPO_ID_PREFIX + projectName.getValue() );
     }
 
     private PropertyTree toNodeData( final CreateProjectParams params )
@@ -197,9 +204,15 @@ public class ProjectServiceImpl implements ProjectService
         return NodePath.create( ProjectConstants.PROJECT_PARENT_PATH, name.getValue() ).build();
     }
 
-    private Context createContext()
+    private <T> T callWithContext( Callable<T> runnable )
     {
-        return ContextBuilder.from( ContextAccessor.current() ).
+        return buildContext().callWith( runnable );
+    }
+
+    private Context buildContext()
+    {
+        return ContextBuilder.create().
+                repositoryId( SystemConstants.SYSTEM_REPO_ID ).
                 branch( ContentConstants.BRANCH_MASTER ).
                 build();
     }
