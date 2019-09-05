@@ -5,9 +5,9 @@ public interface ProjectService {
 
     Project get(ProjectName projectName);
 
-    void create(CreateProjectParams params);
+    Project create(CreateProjectParams params);
 
-    void modify (ModifyProjectParams params);
+    Project modify (ModifyProjectParams params);
 
-    void delete(ProjectName projectName);
+    Project delete(ProjectName projectName);
 }

@@ -1,6 +1,7 @@
 package com.enonic.xp.project;
 
 import com.enonic.xp.attachment.Attachment;
+import com.enonic.xp.attachment.CreateAttachment;
 import com.google.common.base.MoreObjects;
 import com.google.common.base.Objects;
 import com.google.common.base.Preconditions;
@@ -10,7 +11,7 @@ public class ModifyProjectParams
     private final ProjectName name;
     private final String displayName;
     private final String description;
-    private final Attachment icon;
+    private final CreateAttachment icon;
 
     private ModifyProjectParams( final Builder builder )
     {
@@ -20,6 +21,26 @@ public class ModifyProjectParams
         this.displayName = builder.displayName;
         this.description = builder.description;
         this.icon = builder.icon;
+    }
+
+    public ProjectName getName()
+    {
+        return name;
+    }
+
+    public String getDisplayName()
+    {
+        return displayName;
+    }
+
+    public String getDescription()
+    {
+        return description;
+    }
+
+    public CreateAttachment getIcon()
+    {
+        return icon;
     }
 
     public static Builder create()
@@ -73,7 +94,7 @@ public class ModifyProjectParams
         private ProjectName name;
         private String displayName;
         private String description;
-        private Attachment icon;
+        private CreateAttachment icon;
 
         private Builder()
         {
@@ -106,7 +127,7 @@ public class ModifyProjectParams
             return this;
         }
 
-        public Builder icon( Attachment icon )
+        public Builder icon( CreateAttachment icon )
         {
             this.icon = icon;
             return this;

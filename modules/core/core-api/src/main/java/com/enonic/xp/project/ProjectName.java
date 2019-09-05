@@ -12,15 +12,15 @@ public final class ProjectName
 
     private static final Pattern VALID_PROJECT_NAME_REGEX = Pattern.compile( "^[a-z0-9\\-][a-z0-9\\-_]*$" );
 
-    private String name;
+    private String value;
 
-    private ProjectName( String name )
+    private ProjectName( String value )
     {
-        Preconditions.checkNotNull( name, "ProjectName name cannot be null" );
-        Preconditions.checkArgument( VALID_PROJECT_NAME_REGEX.matcher( name ).matches(),
-                String.format( "Project name format incorrect: %s", name ) );
+        Preconditions.checkNotNull( value, "ProjectName name cannot be null" );
+        Preconditions.checkArgument( VALID_PROJECT_NAME_REGEX.matcher( value ).matches(),
+                String.format( "Project name format incorrect: %s", value ) );
 
-        this.name = name;
+        this.value = value;
     }
 
     public static ProjectName from( String name )
@@ -28,9 +28,9 @@ public final class ProjectName
         return new ProjectName( name );
     }
 
-    public String getName()
+    public String getValue()
     {
-        return name;
+        return value;
     }
 
     @Override
@@ -46,20 +46,20 @@ public final class ProjectName
             return false;
         }
         ProjectName that = (ProjectName) o;
-        return Objects.equal( name, that.name );
+        return Objects.equal( value, that.value );
     }
 
     @Override
     public int hashCode()
     {
-        return Objects.hashCode( name );
+        return Objects.hashCode( value );
     }
 
     @Override
     public String toString()
     {
         return MoreObjects.toStringHelper( this )
-                .add( "name", name )
+                .add( "value", value )
                 .toString();
     }
 }
