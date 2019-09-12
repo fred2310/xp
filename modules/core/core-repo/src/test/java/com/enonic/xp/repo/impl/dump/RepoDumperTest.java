@@ -135,6 +135,15 @@ public class RepoDumperTest
         assertTrue( writer.getBinaries().contains( updateBinary.getBlobKey() ) );
     }
 
+    @Test
+    public void repository_data_stored()
+    {
+        final TestDumpWriter writer = new TestDumpWriter();
+        doDump( writer );
+
+        assertNotNull( writer.getRepositoryData() );
+    }
+
     private void doDump( final TestDumpWriter writer )
     {
         NodeHelper.runAsAdmin( () -> RepoDumper.create().

@@ -10,9 +10,9 @@ import com.enonic.xp.data.PropertyTree;
 import com.enonic.xp.data.Value;
 import com.enonic.xp.data.ValueFactory;
 
-final class JsonToPropertyTreeTranslator
+public final class JsonToPropertyTreeTranslator
 {
-    static PropertyTree translate( final JsonNode json )
+    public static PropertyTree translate( final JsonNode json )
     {
         final PropertyTree propertyTree = new PropertyTree();
         traverse( json, propertyTree.getRoot() );

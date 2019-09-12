@@ -16,6 +16,8 @@ public class RepoLoadResult
 
     private final CommitsLoadResult commitsLoadResult;
 
+    private final RepositoryDataLoadResult repositoryDataLoadResult;
+
     private final RepositoryId repositoryId;
 
     private RepoLoadResult( final Builder builder )
@@ -24,6 +26,7 @@ public class RepoLoadResult
         this.repositoryId = builder.repositoryId;
         this.versionsLoadResult = builder.versionsLoadResult;
         this.commitsLoadResult = builder.commitsLoadResult;
+        this.repositoryDataLoadResult = builder.repositoryDataLoadResult;
     }
 
     @Override
@@ -69,6 +72,7 @@ public class RepoLoadResult
 
         private CommitsLoadResult commitsLoadResult;
 
+        private RepositoryDataLoadResult repositoryDataLoadResult;
 
         private Builder( final RepositoryId repositoryId )
         {
@@ -92,6 +96,13 @@ public class RepoLoadResult
             commitsLoadResult = val;
             return this;
         }
+
+        public Builder repositoryData( final RepositoryDataLoadResult val )
+        {
+            repositoryDataLoadResult = val;
+            return this;
+        }
+
 
         public RepoLoadResult build()
         {

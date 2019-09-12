@@ -12,6 +12,7 @@ import com.enonic.xp.node.NodeService;
 import com.enonic.xp.repo.impl.dump.reader.BranchEntryProcessor;
 import com.enonic.xp.repo.impl.dump.reader.CommitEntryProcessor;
 import com.enonic.xp.repo.impl.dump.reader.DumpReader;
+import com.enonic.xp.repo.impl.dump.reader.RepositoryDataEntryProcessor;
 import com.enonic.xp.repo.impl.dump.reader.VersionEntryProcessor;
 import com.enonic.xp.repository.CreateBranchParams;
 import com.enonic.xp.repository.Repository;
@@ -36,6 +37,8 @@ class RepoLoader
     private final VersionEntryProcessor versionEntryProcessor;
 
     private final CommitEntryProcessor commitEntryProcessor;
+
+    private final RepositoryDataEntryProcessor repositoryDataEntryProcessor;
 
     private RepoLoader( final Builder builder )
     {
@@ -62,6 +65,12 @@ class RepoLoader
             blobStore( builder.blobStore ).
             repositoryId( repositoryId ).
             build();
+        this.repositoryDataEntryProcessor = RepositoryDataEntryProcessor.create().
+            dumpReader( this.reader ).
+            nodeService( this.nodeService ).
+            blobStore( builder.blobStore ).
+            repositoryId( repositoryId ).
+            build();
     }
 
     public RepoLoadResult execute()
@@ -82,6 +91,8 @@ class RepoLoader
             repositoryId( this.repositoryId ).
             branch( RepositoryConstants.MASTER_BRANCH ).
             build().runWith( () -> loadCommits( loadResult ) );
+
+        loadRepositoryData( loadResult );
 
         return loadResult.build();
     }
@@ -110,6 +121,11 @@ class RepoLoader
     private void loadVersions( final RepoLoadResult.Builder result )
     {
         result.versions( this.reader.loadVersions( repositoryId, this.versionEntryProcessor ) );
+    }
+
+    private void loadRepositoryData( final RepoLoadResult.Builder result )
+    {
+        result.repositoryData( this.reader.loadRepositoryDataMeta( repositoryId, this.repositoryDataEntryProcessor ) );
     }
 
     private void loadCommits( final RepoLoadResult.Builder result )

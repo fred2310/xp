@@ -100,6 +100,8 @@ class RepoDumper
 
         setContext( RepositoryConstants.MASTER_BRANCH ).runWith( () -> dumpCommits() );
 
+        dumpRepositoryData();
+
         return this.dumpResult.build();
     }
 
@@ -183,6 +185,19 @@ class RepoDumper
 
                 this.writer.writeVersionsEntry( builder.build() );
             } );
+        }
+        finally
+        {
+            writer.close();
+        }
+    }
+
+    private void dumpRepositoryData()
+    {
+        try
+        {
+            writer.openRepositoryDataMeta( this.repositoryId );
+            writer.writePropertyTree( repositoryService.get( repositoryId ).getData().getValue(), "data" );
         }
         finally
         {

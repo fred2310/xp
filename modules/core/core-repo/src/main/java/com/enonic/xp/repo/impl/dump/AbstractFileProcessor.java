@@ -34,6 +34,11 @@ public abstract class AbstractFileProcessor
         return Paths.get( createBranchRootPath( basePath, repositoryId ).toString(), "versions.tar.gz" );
     }
 
+    protected Path createRepositoryDataMetaPath( final Path basePath, final RepositoryId repositoryId )
+    {
+        return Paths.get( createBranchRootPath( basePath, repositoryId ).toString(), "repositorymeta.tar.gz" );
+    }
+
     protected Path createCommitMetaPath( final Path basePath, final RepositoryId repositoryId )
     {
         return Paths.get( createBranchRootPath( basePath, repositoryId ).toString(), "commits.tar.gz" );

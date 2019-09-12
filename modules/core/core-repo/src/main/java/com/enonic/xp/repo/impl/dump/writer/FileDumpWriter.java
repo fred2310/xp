@@ -23,6 +23,7 @@ import com.enonic.xp.blob.BlobStore;
 import com.enonic.xp.blob.NodeVersionKey;
 import com.enonic.xp.blob.Segment;
 import com.enonic.xp.branch.Branch;
+import com.enonic.xp.data.PropertyTree;
 import com.enonic.xp.repo.impl.dump.AbstractFileProcessor;
 import com.enonic.xp.repo.impl.dump.DumpBlobStore;
 import com.enonic.xp.repo.impl.dump.DumpConstants;
@@ -103,6 +104,20 @@ public class FileDumpWriter
     }
 
     @Override
+    public void openRepositoryDataMeta( RepositoryId repositoryId )
+    {
+        try
+        {
+            final File metaFile = createRepositoryDataMeta( repositoryId );
+            doOpenFile( metaFile );
+        }
+        catch ( Exception e )
+        {
+            throw new RepoDumpException( "Could not open meta-file", e );
+        }
+    }
+
+    @Override
     public void openVersionsMeta( final RepositoryId repositoryId )
     {
         try
@@ -142,6 +157,13 @@ public class FileDumpWriter
     private File createBranchMeta( final RepositoryId repositoryId, final Branch branch )
     {
         final File metaFile = createBranchMetaPath( this.dumpDirectory, repositoryId, branch ).toFile();
+
+        return doCreateMetaFile( metaFile );
+    }
+
+    private File createRepositoryDataMeta( final RepositoryId repositoryId )
+    {
+        final File metaFile = createRepositoryDataMetaPath( this.dumpDirectory, repositoryId ).toFile();
 
         return doCreateMetaFile( metaFile );
     }
@@ -200,6 +222,13 @@ public class FileDumpWriter
         final String serializedEntry = serializer.serialize( commitDumpEntry );
         final String entryName = commitDumpEntry.getNodeCommitId().toString() + ".json";
         storeTarEntry( serializedEntry, entryName );
+    }
+
+    @Override
+    public void writePropertyTree( final PropertyTree propertyTree, String name )
+    {
+        String serializedEntry = serializer.serialize( propertyTree );
+        storeTarEntry( serializedEntry, name + ".json" );
     }
 
     public void storeTarEntry( final String serializedEntry, final String entryName )

@@ -26,6 +26,12 @@ public class BufferFileDumpReader
     }
 
     @Override
+    protected Path createRepositoryDataMetaPath( Path basePath, RepositoryId repositoryId )
+    {
+        return Paths.get( createBranchRootPath( basePath, repositoryId ).toString(), "repositorymeta-" + suffix + ".tar.gz" );
+    }
+
+    @Override
     protected Path createVersionMetaPath( final Path basePath, final RepositoryId repositoryId )
     {
         return Paths.get( createBranchRootPath( basePath, repositoryId ).toString(), "versions-" + suffix + ".tar.gz" );

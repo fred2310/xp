@@ -32,6 +32,7 @@ import com.enonic.xp.dump.BranchLoadResult;
 import com.enonic.xp.dump.CommitsLoadResult;
 import com.enonic.xp.dump.LoadError;
 import com.enonic.xp.dump.RepoDumpResult;
+import com.enonic.xp.dump.RepositoryDataLoadResult;
 import com.enonic.xp.dump.SystemDumpResult;
 import com.enonic.xp.dump.SystemLoadListener;
 import com.enonic.xp.dump.VersionsLoadResult;
@@ -219,6 +220,25 @@ public class FileDumpReader
             build();
     }
 
+    @Override
+    public RepositoryDataLoadResult loadRepositoryDataMeta( RepositoryId repositoryId,
+                                                            final LineProcessor<EntryLoadResult> processor )
+    {
+        final File repositoryDataFile = getRepositoryDataFile( repositoryId );
+
+        final RepositoryDataLoadResult.Builder builder = RepositoryDataLoadResult.create();
+
+        if ( repositoryDataFile == null )
+        {
+            return builder.build();
+        }
+
+        final EntriesLoadResult result = doLoadEntries( processor, repositoryDataFile );
+        return builder.successful( result.getSuccessful() ).
+            errors( result.getErrors().stream().map( error -> LoadError.error( error.getMessage() ) ).collect( Collectors.toList() ) ).
+            build();
+    }
+
     private Long getBranchSuccessfulCountFromMeta( final RepositoryId repositoryId, final Branch branch )
     {
         final SystemDumpResult systemDumpResult = this.dumpMeta.getSystemDumpResult();
@@ -318,6 +338,12 @@ public class FileDumpReader
     public File getMetaDataFile()
     {
         return new File( this.dumpDirectory.toString(), "dump.json" );
+    }
+
+    public File getRepositoryDataFile( final RepositoryId repositoryId )
+    {
+        final Path metaPath = createRepositoryDataMetaPath( this.dumpDirectory, repositoryId );
+        return doGetFile( metaPath, false );
     }
 
     private File doGetFile( final Path metaPath )

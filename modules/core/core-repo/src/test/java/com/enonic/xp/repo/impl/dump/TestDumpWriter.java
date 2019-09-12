@@ -10,6 +10,7 @@ import com.google.common.collect.Sets;
 
 import com.enonic.xp.blob.NodeVersionKey;
 import com.enonic.xp.branch.Branch;
+import com.enonic.xp.data.PropertyTree;
 import com.enonic.xp.repo.impl.dump.model.BranchDumpEntry;
 import com.enonic.xp.repo.impl.dump.model.CommitDumpEntry;
 import com.enonic.xp.repo.impl.dump.model.DumpMeta;
@@ -30,6 +31,8 @@ class TestDumpWriter
 
     private DumpMeta dumpMeta;
 
+    private PropertyTree repositoryData;
+
     public TestDumpWriter()
     {
         this.entries = ArrayListMultimap.create();
@@ -45,6 +48,12 @@ class TestDumpWriter
     public void openBranchMeta( final RepositoryId repositoryId, final Branch branch )
     {
         current = new RepoBranchEntry( repositoryId, branch );
+    }
+
+    @Override
+    public void openRepositoryDataMeta( final RepositoryId repositoryId )
+    {
+        // Do nothing yet
     }
 
     @Override
@@ -83,6 +92,11 @@ class TestDumpWriter
         // Do nothing yet
     }
 
+    @Override
+    public void writePropertyTree( PropertyTree propertyTree, String name )
+    {
+        this.repositoryData = propertyTree;
+    }
 
     @Override
     public void writeNodeVersionBlobs( final RepositoryId repositoryId, final NodeVersionKey nodeVersionKey )
@@ -119,6 +133,11 @@ class TestDumpWriter
     public Set<NodeVersionKey> getNodeVersionKeys()
     {
         return nodeVersionKeys;
+    }
+
+    public PropertyTree getRepositoryData()
+    {
+        return repositoryData;
     }
 
     class RepoBranchEntry

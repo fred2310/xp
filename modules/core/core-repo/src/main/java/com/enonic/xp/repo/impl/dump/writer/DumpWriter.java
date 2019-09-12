@@ -2,6 +2,7 @@ package com.enonic.xp.repo.impl.dump.writer;
 
 import com.enonic.xp.blob.NodeVersionKey;
 import com.enonic.xp.branch.Branch;
+import com.enonic.xp.data.PropertyTree;
 import com.enonic.xp.repo.impl.dump.model.BranchDumpEntry;
 import com.enonic.xp.repo.impl.dump.model.CommitDumpEntry;
 import com.enonic.xp.repo.impl.dump.model.DumpMeta;
@@ -13,6 +14,8 @@ public interface DumpWriter
     void writeDumpMetaData( final DumpMeta dumpMeta );
 
     void openBranchMeta( final RepositoryId repositoryId, final Branch branch );
+
+    void openRepositoryDataMeta( RepositoryId repositoryId );
 
     void openVersionsMeta( final RepositoryId repositoryId );
 
@@ -30,4 +33,5 @@ public interface DumpWriter
 
     void writeBinaryBlob( final RepositoryId repositoryId, final String key );
 
+    void writePropertyTree( final PropertyTree propertyTree, String name );
 }

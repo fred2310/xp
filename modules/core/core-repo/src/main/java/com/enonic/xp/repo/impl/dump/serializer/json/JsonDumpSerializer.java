@@ -5,11 +5,14 @@ import java.io.IOException;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 
+import com.enonic.xp.data.PropertyTree;
 import com.enonic.xp.repo.impl.dump.RepoDumpException;
 import com.enonic.xp.repo.impl.dump.model.BranchDumpEntry;
 import com.enonic.xp.repo.impl.dump.model.CommitDumpEntry;
 import com.enonic.xp.repo.impl.dump.model.VersionsDumpEntry;
 import com.enonic.xp.repo.impl.dump.serializer.DumpSerializer;
+import com.enonic.xp.repo.impl.repository.JsonToPropertyTreeTranslator;
+import com.enonic.xp.util.JsonHelper;
 
 public class JsonDumpSerializer
     implements DumpSerializer
@@ -48,6 +51,19 @@ public class JsonDumpSerializer
         try
         {
             return MAPPER.writeValueAsString( CommitDumpEntryJson.from( commitDumpEntry ) );
+        }
+        catch ( JsonProcessingException e )
+        {
+            throw new RepoDumpException( "Cannot serializer dumpEntry", e );
+        }
+    }
+
+    @Override
+    public String serialize( PropertyTree propertyTree )
+    {
+        try
+        {
+            return MAPPER.writeValueAsString( JsonHelper.from( propertyTree ) );
         }
         catch ( JsonProcessingException e )
         {
@@ -96,4 +112,18 @@ public class JsonDumpSerializer
             throw new RepoDumpException( "Cannot deserialize value [" + value + "] to DumpEntry", e );
         }
     }
+
+    @Override
+    public PropertyTree toPropertyTree( final String value )
+    {
+        try
+        {
+            return JsonToPropertyTreeTranslator.translate( MAPPER.readTree( value ) );
+        }
+        catch ( IOException e )
+        {
+            throw new RepoDumpException( "Cannot deserialize value [" + value + "] to DumpEntry", e );
+        }
+    }
+
 }
