@@ -4,6 +4,7 @@ apply plugin: 'java-base'
 
 configurations {
     lib
+    all*.exclude group: 'com.google.code.findbugs', module: 'jsr305'
 }
 
 dependencies {
