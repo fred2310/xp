@@ -1,8 +1,6 @@
 package com.enonic.xp.admin.impl.rest.resource;
 
 import java.nio.charset.StandardCharsets;
-import java.nio.file.Files;
-import java.nio.file.Paths;
 import java.util.Arrays;
 import java.util.List;
 
@@ -10,16 +8,19 @@ import org.tensorflow.Graph;
 import org.tensorflow.Session;
 import org.tensorflow.Tensor;
 
+import com.google.common.io.Resources;
+
 public class Tensorflow
 {
     public static String classify( byte[] imageBytes )
     {
         try
         {
-            String modelpath = "\\Users\\sry\\Downloads\\inception_dec_2015";
-            byte[] graphDef = Files.readAllBytes( Paths.get( modelpath, "tensorflow_inception_graph.pb" ) );
+            byte[] graphDef = Resources.asByteSource(
+                Tensorflow.class.getClassLoader().getResource( "tensorflow/tensorflow_inception_graph.pb" ) ).read();
             List<String> labels =
-                Files.readAllLines( Paths.get( modelpath, "imagenet_comp_graph_label_strings.txt" ), StandardCharsets.UTF_8 );
+                Resources.asCharSource( Tensorflow.class.getClassLoader().getResource( "tensorflow/imagenet_comp_graph_label_strings.txt" ),
+                                        StandardCharsets.UTF_8 ).readLines();
 
                 float[] labelProbabilities = executeInceptionGraph( graphDef, imageBytes );
                 int bestLabelIdx = maxIndex( labelProbabilities );
