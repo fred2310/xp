@@ -3,6 +3,7 @@ apply from: "$rootDir/gradle/osgi.gradle"
 dependencies {
     compile project( ':admin:admin-api' )
     compile 'org.jboss.resteasy:resteasy-jaxrs:3.0.8.Final'
+    compile 'org.tensorflow:tensorflow:1.15.0'
     testCompile project( ':jaxrs:jaxrs-impl' )
     testCompile project( path: ':core:core-app', configuration: 'testOutput' )
     testCompile project( path: ':portal:portal-api', configuration: 'testOutput' )
@@ -10,5 +11,6 @@ dependencies {
 }
 
 jar {
-    bnd( 'Bundle-Name': 'Enonic XP Admin - Impl' )
+    bnd( 'Bundle-Name': 'Enonic XP Admin - Impl' ,
+         'Private-Package': 'org.tensorflow.*')
 }

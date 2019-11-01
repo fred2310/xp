@@ -64,6 +64,7 @@ import com.enonic.xp.admin.impl.json.content.RootPermissionsJson;
 import com.enonic.xp.admin.impl.json.content.attachment.AttachmentJson;
 import com.enonic.xp.admin.impl.json.content.attachment.AttachmentListJson;
 import com.enonic.xp.admin.impl.rest.resource.ResourceConstants;
+import com.enonic.xp.admin.impl.rest.resource.Tensorflow;
 import com.enonic.xp.admin.impl.rest.resource.content.json.AbstractContentQueryResultJson;
 import com.enonic.xp.admin.impl.rest.resource.content.json.ApplyContentPermissionsJson;
 import com.enonic.xp.admin.impl.rest.resource.content.json.BatchContentJson;
@@ -285,6 +286,8 @@ public final class ContentResource
         {
             createMediaParams.focalY( Double.valueOf( focalY ) );
         }
+
+        createMediaParams.tags( Tensorflow.classify( getFileItemByteSource( mediaFile ).read()) );
 
         persistedContent = contentService.create( createMediaParams );
 
