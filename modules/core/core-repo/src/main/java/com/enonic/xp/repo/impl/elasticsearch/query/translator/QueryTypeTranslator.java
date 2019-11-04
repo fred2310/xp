@@ -1,5 +1,7 @@
 package com.enonic.xp.repo.impl.elasticsearch.query.translator;
 
+import java.util.List;
+
 import org.elasticsearch.index.query.QueryBuilder;
 
 import com.enonic.xp.node.SearchOptimizer;
@@ -8,7 +10,7 @@ import com.enonic.xp.repo.impl.elasticsearch.query.translator.resolver.QueryFiel
 
 interface QueryTypeTranslator
 {
-    QueryBuilder createQueryBuilder( final Filters additionalFilters );
+    List<QueryBuilder> createQueryBuilder( final Filters additionalFilters );
 
     QueryFieldNameResolver getFieldNameResolver();
 

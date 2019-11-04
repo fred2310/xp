@@ -1,5 +1,7 @@
 package com.enonic.xp.repo.impl.elasticsearch.query.translator;
 
+import java.util.List;
+
 import org.elasticsearch.index.query.QueryBuilder;
 
 import com.enonic.xp.node.SearchOptimizer;
@@ -23,7 +25,7 @@ class NodeVersionDiffQueryTranslator
     }
 
     @Override
-    public QueryBuilder createQueryBuilder( final Filters additionalFilters )
+    public List<QueryBuilder> createQueryBuilder( final Filters additionalFilters )
     {
         return DiffQueryFactory.create().
             query( query ).

@@ -1,5 +1,7 @@
 package com.enonic.xp.repo.impl.elasticsearch.search;
 
+import java.util.List;
+
 import org.elasticsearch.client.Client;
 import org.osgi.service.component.annotations.Component;
 import org.osgi.service.component.annotations.Reference;
@@ -16,7 +18,7 @@ public class SearchDaoImpl
     private Client client;
 
     @Override
-    public SearchResult search( final SearchRequest searchRequest )
+    public List<SearchResult> search( final SearchRequest searchRequest )
     {
         return SearchExecutor.create( this.client ).
             build().

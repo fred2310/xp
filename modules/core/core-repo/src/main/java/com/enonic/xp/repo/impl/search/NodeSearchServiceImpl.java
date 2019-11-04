@@ -1,7 +1,12 @@
 package com.enonic.xp.repo.impl.search;
 
+import java.util.List;
+import java.util.Set;
+
 import org.osgi.service.component.annotations.Component;
 import org.osgi.service.component.annotations.Reference;
+
+import com.google.common.collect.Sets;
 
 import com.enonic.xp.node.NodeCommitQuery;
 import com.enonic.xp.node.NodeQuery;
@@ -11,6 +16,8 @@ import com.enonic.xp.repo.impl.SearchSource;
 import com.enonic.xp.repo.impl.branch.search.NodeBranchQuery;
 import com.enonic.xp.repo.impl.branch.storage.BranchIndexPath;
 import com.enonic.xp.repo.impl.commit.storage.CommitIndexPath;
+import com.enonic.xp.repo.impl.search.result.SearchHit;
+import com.enonic.xp.repo.impl.search.result.SearchHits;
 import com.enonic.xp.repo.impl.search.result.SearchResult;
 import com.enonic.xp.repo.impl.version.VersionIndexPath;
 import com.enonic.xp.repo.impl.version.search.NodeVersionDiffQuery;
@@ -54,7 +61,7 @@ public class NodeSearchServiceImpl
             returnFields( returnFields ).
             build();
 
-        return searchDao.search( searchRequest );
+        return searchDao.search( searchRequest ).get( 0 );
     }
 
     @Override
@@ -66,7 +73,7 @@ public class NodeSearchServiceImpl
             query( nodeBranchQuery ).
             build();
 
-        return searchDao.search( searchRequest );
+        return searchDao.search( searchRequest ).get( 0 );
     }
 
     @Override
@@ -78,7 +85,7 @@ public class NodeSearchServiceImpl
             query( query ).
             build();
 
-        return searchDao.search( searchRequest );
+        return searchDao.search( searchRequest ).get( 0 );
     }
 
     @Override
@@ -90,7 +97,7 @@ public class NodeSearchServiceImpl
             query( query ).
             build();
 
-        return searchDao.search( searchRequest );
+        return searchDao.search( searchRequest ).get( 0 );
     }
 
     @Override
@@ -102,7 +109,21 @@ public class NodeSearchServiceImpl
             query( query ).
             build();
 
-        return searchDao.search( searchRequest );
+        final List<SearchResult> results = searchDao.search( searchRequest );
+
+        final Sets.SetView<SearchHit> view1 =
+            Sets.symmetricDifference( Sets.newHashSet( results.get( 0 ).getHits() ), Sets.newHashSet( results.get( 1 ).getHits() ) );
+        final Sets.SetView<SearchHit> view2 =
+            Sets.symmetricDifference( Sets.newHashSet( results.get( 2 ).getHits() ), Sets.newHashSet( results.get( 3 ).getHits() ) );
+
+        final Set<SearchHit> result = Sets.union( view1, view2 ).immutableCopy();
+
+        return SearchResult.create().
+            hits( SearchHits.create().
+                addAll( result ).
+                build() ).
+            totalHits( result.size() ).
+            build();
     }
 
     @Reference

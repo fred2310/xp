@@ -1,5 +1,7 @@
 package com.enonic.xp.repo.impl.elasticsearch.query.translator;
 
+import java.util.List;
+
 import org.elasticsearch.index.query.QueryBuilder;
 
 import com.enonic.xp.data.ValueFactory;
@@ -38,14 +40,14 @@ class NodeQueryTranslator
     }
 
     @Override
-    public QueryBuilder createQueryBuilder( final Filters additionalFilters )
+    public List<QueryBuilder> createQueryBuilder( final Filters additionalFilters )
     {
         final QueryBuilderFactory.Builder queryBuilderBuilder = createQuery( nodeQuery );
         queryBuilderBuilder.addQueryFilters( additionalFilters );
         addParentFilter( nodeQuery, queryBuilderBuilder );
         addPathFilter( nodeQuery, queryBuilderBuilder );
 
-        return queryBuilderBuilder.build().create();
+        return List.of( queryBuilderBuilder.build().create() );
     }
 
     private QueryBuilderFactory.Builder createQuery( final Query nodeQuery )

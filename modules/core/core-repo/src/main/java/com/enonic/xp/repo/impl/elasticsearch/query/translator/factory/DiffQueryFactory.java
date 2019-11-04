@@ -1,5 +1,7 @@
 package com.enonic.xp.repo.impl.elasticsearch.query.translator.factory;
 
+import java.util.List;
+
 import org.elasticsearch.index.query.BoolQueryBuilder;
 import org.elasticsearch.index.query.FilteredQueryBuilder;
 import org.elasticsearch.index.query.HasChildQueryBuilder;
@@ -45,12 +47,12 @@ public class DiffQueryFactory
         return new Builder();
     }
 
-    public QueryBuilder execute()
+    public List<QueryBuilder> execute()
     {
         return createDiffQuery();
     }
 
-    private QueryBuilder createDiffQuery()
+    private List<QueryBuilder> createDiffQuery()
     {
         final BoolQueryBuilder inSourceOnly = onlyInQuery( this.source, this.target );
 
@@ -60,24 +62,25 @@ public class DiffQueryFactory
 
         final BoolQueryBuilder deletedInTargetOnly = deletedOnlyQuery( this.target, this.source );
 
-        final BoolQueryBuilder sourceTargetCompares =
-            joinOnlyInQueries( inSourceOnly, inTargetOnly, deletedInSourceOnly, deletedInTargetOnly );
+//        final BoolQueryBuilder sourceTargetCompares =
+//            joinOnlyInQueries( inSourceOnly, inTargetOnly, deletedInSourceOnly, deletedInTargetOnly );
 
-        return wrapInPathQueryIfNecessary( sourceTargetCompares );
+        return List.of( wrapInPathQueryIfNecessary( inSourceOnly ), wrapInPathQueryIfNecessary( inTargetOnly ),
+                        wrapInPathQueryIfNecessary( deletedInSourceOnly ), wrapInPathQueryIfNecessary( deletedInTargetOnly ) );
     }
 
     private BoolQueryBuilder deletedOnlyQuery( final Branch source, final Branch target )
     {
         return new BoolQueryBuilder().
-            must( deletedInBranch( source ) ).
-            mustNot( deletedInBranch( target ) );
+            must( deletedInBranch( source ) )/*.
+            mustNot( deletedInBranch( target ) )*/;
     }
 
     private BoolQueryBuilder onlyInQuery( final Branch source, final Branch target )
     {
         return new BoolQueryBuilder().
-            must( isInBranch( source ) ).
-            mustNot( isInBranch( target ) );
+            must( isInBranch( source ) )/*.
+            mustNot( isInBranch( target ) )*/;
     }
 
     private FilteredQueryBuilder wrapInPathQueryIfNecessary( final BoolQueryBuilder sourceTargetCompares )
