@@ -1,5 +1,7 @@
 package com.enonic.xp.repo.impl.elasticsearch.query.translator;
 
+import java.util.List;
+
 import org.elasticsearch.index.query.QueryBuilder;
 
 import com.enonic.xp.node.SearchOptimizer;
@@ -40,7 +42,7 @@ class NodeBranchQueryTranslator
     }
 
     @Override
-    public QueryBuilder createQueryBuilder( final Filters additionalFilters )
+    public List<QueryBuilder> createQueryBuilder( final Filters additionalFilters )
     {
         final QueryBuilderFactory.Builder queryBuilderBuilder = QueryBuilderFactory.newBuilder().
             queryExpr( this.query.getQuery() ).
@@ -48,6 +50,6 @@ class NodeBranchQueryTranslator
             addQueryFilters( additionalFilters ).
             fieldNameResolver( this.fieldNameResolver );
 
-        return queryBuilderBuilder.build().create();
+        return List.of( queryBuilderBuilder.build().create() );
     }
 }

@@ -1,6 +1,7 @@
 package com.enonic.xp.repo.impl.storage.branch;
 
 import java.time.Instant;
+import java.util.List;
 
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -98,7 +99,7 @@ public class BranchServiceImplTest
                 build() );
 
         Mockito.when( this.searchDao.search( Mockito.isA( SearchRequest.class ) ) ).
-            thenReturn( SearchResult.create().build() );
+            thenReturn( List.of( SearchResult.create().build() ) );
 
         final NodeBranchEntry fetchEntry = this.branchService.get( path, context );
 

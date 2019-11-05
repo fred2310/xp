@@ -1,16 +1,26 @@
 package com.enonic.xp.repo.impl.search;
 
+import java.util.List;
+import java.util.Set;
+import java.util.stream.Collectors;
+
 import org.osgi.service.component.annotations.Component;
 import org.osgi.service.component.annotations.Reference;
 
+import com.google.common.collect.Sets;
+
+import com.enonic.xp.context.ContextAccessor;
 import com.enonic.xp.node.NodeCommitQuery;
 import com.enonic.xp.node.NodeQuery;
 import com.enonic.xp.node.NodeVersionQuery;
+import com.enonic.xp.node.NodeVersionsQuery;
 import com.enonic.xp.repo.impl.ReturnFields;
 import com.enonic.xp.repo.impl.SearchSource;
+import com.enonic.xp.repo.impl.SingleRepoStorageSource;
 import com.enonic.xp.repo.impl.branch.search.NodeBranchQuery;
 import com.enonic.xp.repo.impl.branch.storage.BranchIndexPath;
 import com.enonic.xp.repo.impl.commit.storage.CommitIndexPath;
+import com.enonic.xp.repo.impl.search.result.SearchHits;
 import com.enonic.xp.repo.impl.search.result.SearchResult;
 import com.enonic.xp.repo.impl.version.VersionIndexPath;
 import com.enonic.xp.repo.impl.version.search.NodeVersionDiffQuery;
@@ -54,7 +64,7 @@ public class NodeSearchServiceImpl
             returnFields( returnFields ).
             build();
 
-        return searchDao.search( searchRequest );
+        return searchDao.search( searchRequest ).get( 0 );
     }
 
     @Override
@@ -66,7 +76,7 @@ public class NodeSearchServiceImpl
             query( nodeBranchQuery ).
             build();
 
-        return searchDao.search( searchRequest );
+        return searchDao.search( searchRequest ).get( 0 );
     }
 
     @Override
@@ -78,7 +88,7 @@ public class NodeSearchServiceImpl
             query( query ).
             build();
 
-        return searchDao.search( searchRequest );
+        return searchDao.search( searchRequest ).get( 0 );
     }
 
     @Override
@@ -90,7 +100,7 @@ public class NodeSearchServiceImpl
             query( query ).
             build();
 
-        return searchDao.search( searchRequest );
+        return searchDao.search( searchRequest ).get( 0 );
     }
 
     @Override
@@ -98,11 +108,72 @@ public class NodeSearchServiceImpl
     {
         final SearchRequest searchRequest = SearchRequest.create().
             searchSource( source ).
-            returnFields( VERSION_RETURN_FIELDS ).
+            returnFields( ReturnFields.from( BranchIndexPath.VERSION_ID ) ).
             query( query ).
             build();
 
-        return searchDao.search( searchRequest );
+        final List<SearchResult> results = searchDao.search( searchRequest );
+
+        Set set1 = results.get( 0 ).
+            getHits().
+            stream().
+            map( hit -> hit.getField( "versionid" ).getSingleValue() ).
+            collect( Collectors.toSet() );
+
+        Set set2 = results.get( 1 ).
+            getHits().
+            stream().
+            map( hit -> hit.getField( "versionid" ).getSingleValue() ).
+            collect( Collectors.toSet() );
+
+        Set set3 = results.get( 2 ).
+            getHits().
+            stream().
+            map( hit -> hit.getField( "versionid" ).getSingleValue() ).
+            collect( Collectors.toSet() );
+
+        Set set4 = results.get( 3 ).
+            getHits().
+            stream().
+            map( hit -> (String) hit.getField( "versionid" ).getSingleValue() ).
+            collect( Collectors.toSet() );
+
+        final Sets.SetView<String> view1 = Sets.symmetricDifference( set1, set2 );
+        final Sets.SetView view2 = Sets.symmetricDifference( set3, set4 );
+
+        // desired version ids
+        final Set<String> result = Sets.union( view1, view2 ).immutableCopy();
+
+        if ( result.size() > 0 )
+        {
+            return searchDao.search( SearchRequest.create().
+                searchSource(
+                    SingleRepoStorageSource.create( ContextAccessor.current().getRepositoryId(), SingleRepoStorageSource.Type.VERSION ) ).
+                returnFields( VERSION_RETURN_FIELDS ).
+                query( NodeVersionsQuery.create().
+                    addIds( result ).
+                    size( -1 ).
+                    batchSize( 20000 ).
+                    build() ).
+                build() ).get( 0 );
+        }
+        else
+        {
+            return SearchResult.create().hits( SearchHits.create().build() ).build();
+        }
+
+       /* final NodeVersionQuery version = NodeVersionQuery.create().
+            size( -1 ).
+            nodeId( params.getNodeId() ).
+            addOrderBy( FieldOrderExpr.create( VersionIndexPath.TIMESTAMP, OrderExpr.Direction.DESC ) ).
+            build();
+
+        return FindNodeVersionsCommand.create().
+            query( query ).
+            searchService( this.nodeSearchService ).
+            build().
+            execute();*/
+
     }
 
     @Reference

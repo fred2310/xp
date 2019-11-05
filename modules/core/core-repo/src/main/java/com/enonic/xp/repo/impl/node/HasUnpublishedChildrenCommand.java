@@ -37,11 +37,11 @@ public class HasUnpublishedChildrenCommand
             source( ContextAccessor.current().getBranch() ).
             target( target ).
             nodePath( parentNode.path() ).
-            size( 0 ).
+            size( -1 ).
             excludes( ExcludeEntries.create().
                 add( new ExcludeEntry( parentNode.path(), false ) ).
                 build() ).
-            build(), SingleRepoStorageSource.create( ContextAccessor.current().getRepositoryId(), SingleRepoStorageSource.Type.VERSION ) );
+            build(), SingleRepoStorageSource.create( ContextAccessor.current().getRepositoryId(), SingleRepoStorageSource.Type.BRANCH ) );
 
         return result.getTotalHits() > 0;
     }

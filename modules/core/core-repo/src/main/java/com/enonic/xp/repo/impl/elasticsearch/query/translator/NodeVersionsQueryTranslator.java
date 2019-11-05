@@ -1,24 +1,28 @@
 package com.enonic.xp.repo.impl.elasticsearch.query.translator;
 
 import java.util.List;
+import java.util.stream.Collectors;
 
 import org.elasticsearch.index.query.QueryBuilder;
 
-import com.enonic.xp.node.NodeCommitQuery;
+import com.enonic.xp.data.ValueFactory;
+import com.enonic.xp.node.NodeVersionsQuery;
 import com.enonic.xp.node.SearchOptimizer;
 import com.enonic.xp.query.filter.Filters;
+import com.enonic.xp.query.filter.ValueFilter;
 import com.enonic.xp.repo.impl.elasticsearch.query.translator.factory.QueryBuilderFactory;
 import com.enonic.xp.repo.impl.elasticsearch.query.translator.resolver.QueryFieldNameResolver;
 import com.enonic.xp.repo.impl.elasticsearch.query.translator.resolver.StoreQueryFieldNameResolver;
+import com.enonic.xp.repo.impl.version.VersionIndexPath;
 
-class NodeCommitQueryTranslator
+class NodeVersionsQueryTranslator
     implements QueryTypeTranslator
 {
+    private final NodeVersionsQuery query;
+
     private final QueryFieldNameResolver fieldNameResolver = new StoreQueryFieldNameResolver();
 
-    private final NodeCommitQuery query;
-
-    NodeCommitQueryTranslator( final NodeCommitQuery query )
+    NodeVersionsQueryTranslator( final NodeVersionsQuery query )
     {
         this.query = query;
     }
@@ -32,13 +36,13 @@ class NodeCommitQueryTranslator
     @Override
     public int getBatchSize()
     {
-        return this.query.getBatchSize();
+        return query.getSize();
     }
 
     @Override
     public SearchOptimizer getSearchOptimizer()
     {
-        return this.query.getSearchOptimizer();
+        return query.getSearchOptimizer();
     }
 
     @Override
@@ -50,6 +54,19 @@ class NodeCommitQueryTranslator
             addQueryFilters( additionalFilters ).
             fieldNameResolver( this.fieldNameResolver );
 
+        addIdsFilter( this.query, queryBuilderBuilder );
+
         return List.of( queryBuilderBuilder.build().create() );
+    }
+
+    private void addIdsFilter( final NodeVersionsQuery nodeVersionsQuery, final QueryBuilderFactory.Builder queryBuilderBuilder )
+    {
+        if ( nodeVersionsQuery.getIds() != null )
+        {
+            queryBuilderBuilder.addQueryFilter( ValueFilter.create().
+                fieldName( VersionIndexPath.VERSION_ID.getPath() ).
+                addAllValues( nodeVersionsQuery.getIds().stream().map( ValueFactory::newString ).collect( Collectors.toSet() ) ).
+                build() );
+        }
     }
 }

@@ -251,7 +251,7 @@ public class BranchServiceImpl
         final SearchResult result = this.searchDao.search( SearchRequest.create().
             searchSource( SingleRepoSearchSource.from( context ) ).
             query( query ).
-            build() );
+            build() ).get( 0 );
 
         if ( !result.isEmpty() )
         {
@@ -343,7 +343,7 @@ public class BranchServiceImpl
                 build() ).
             returnFields( BRANCH_RETURN_FIELDS ).
             searchSource( new SingleRepoStorageSource( context.getRepositoryId(), SingleRepoStorageSource.Type.BRANCH ) ).
-            build() );
+            build() ).get( 0 );
 
         final NodeBranchQueryResult nodeBranchEntries = NodeBranchQueryResultFactory.create( results );
         return NodeBranchEntries.from( nodeBranchEntries.getList() );

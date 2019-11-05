@@ -1,5 +1,7 @@
 package com.enonic.xp.repo.impl.elasticsearch.query.translator;
 
+import java.util.List;
+
 import org.elasticsearch.index.query.QueryBuilder;
 
 import com.enonic.xp.data.ValueFactory;
@@ -43,7 +45,7 @@ class NodeVersionQueryTranslator
     }
 
     @Override
-    public QueryBuilder createQueryBuilder( final Filters additionalFilters )
+    public List<QueryBuilder> createQueryBuilder( final Filters additionalFilters )
     {
         final QueryBuilderFactory.Builder queryBuilderBuilder = QueryBuilderFactory.newBuilder().
             queryExpr( this.query.getQuery() ).
@@ -53,7 +55,7 @@ class NodeVersionQueryTranslator
 
         addNodeIdFilter( this.query, queryBuilderBuilder );
 
-        return queryBuilderBuilder.build().create();
+        return List.of( queryBuilderBuilder.build().create() );
     }
 
     private void addNodeIdFilter( final NodeVersionQuery nodeVersionQuery, final QueryBuilderFactory.Builder queryBuilderBuilder )

@@ -1,8 +1,9 @@
 package com.enonic.xp.repo.impl.elasticsearch.query.translator.factory;
 
+import java.util.List;
+
 import org.elasticsearch.index.query.BoolQueryBuilder;
 import org.elasticsearch.index.query.FilteredQueryBuilder;
-import org.elasticsearch.index.query.HasChildQueryBuilder;
 import org.elasticsearch.index.query.QueryBuilder;
 import org.elasticsearch.index.query.QueryBuilders;
 import org.elasticsearch.index.query.TermQueryBuilder;
@@ -45,12 +46,12 @@ public class DiffQueryFactory
         return new Builder();
     }
 
-    public QueryBuilder execute()
+    public List<QueryBuilder> execute()
     {
         return createDiffQuery();
     }
 
-    private QueryBuilder createDiffQuery()
+    private List<QueryBuilder> createDiffQuery()
     {
         final BoolQueryBuilder inSourceOnly = onlyInQuery( this.source, this.target );
 
@@ -60,24 +61,25 @@ public class DiffQueryFactory
 
         final BoolQueryBuilder deletedInTargetOnly = deletedOnlyQuery( this.target, this.source );
 
-        final BoolQueryBuilder sourceTargetCompares =
-            joinOnlyInQueries( inSourceOnly, inTargetOnly, deletedInSourceOnly, deletedInTargetOnly );
+//        final BoolQueryBuilder sourceTargetCompares =
+//            joinOnlyInQueries( inSourceOnly, inTargetOnly, deletedInSourceOnly, deletedInTargetOnly );
 
-        return wrapInPathQueryIfNecessary( sourceTargetCompares );
+        return List.of( wrapInPathQueryIfNecessary( inSourceOnly ), wrapInPathQueryIfNecessary( inTargetOnly ),
+                        wrapInPathQueryIfNecessary( deletedInSourceOnly ), wrapInPathQueryIfNecessary( deletedInTargetOnly ) );
     }
 
     private BoolQueryBuilder deletedOnlyQuery( final Branch source, final Branch target )
     {
         return new BoolQueryBuilder().
-            must( deletedInBranch( source ) ).
-            mustNot( deletedInBranch( target ) );
+            must( deletedInBranch( source ) )/*.
+            mustNot( deletedInBranch( target ) )*/;
     }
 
     private BoolQueryBuilder onlyInQuery( final Branch source, final Branch target )
     {
         return new BoolQueryBuilder().
-            must( isInBranch( source ) ).
-            mustNot( isInBranch( target ) );
+            must( isInBranch( source ) )/*.
+            mustNot( isInBranch( target ) )*/;
     }
 
     private FilteredQueryBuilder wrapInPathQueryIfNecessary( final BoolQueryBuilder sourceTargetCompares )
@@ -132,14 +134,14 @@ public class DiffQueryFactory
                                                         queryPath.endsWith( "/" ) ? queryPath + "*" : queryPath + "/*" ) );
         }
 
-        return new HasChildQueryBuilder( childStorageType.getName(), pathQuery );
+        return pathQuery;
     }
 
-    private HasChildQueryBuilder deletedInBranch( final Branch sourceBranch )
+    private BoolQueryBuilder deletedInBranch( final Branch sourceBranch )
     {
-        return new HasChildQueryBuilder( childStorageType.getName(), new BoolQueryBuilder().
+        return new BoolQueryBuilder().
             must( isDeleted() ).
-            must( new TermQueryBuilder( BranchIndexPath.BRANCH_NAME.toString(), sourceBranch.getValue() ) ) );
+            must( new TermQueryBuilder( BranchIndexPath.BRANCH_NAME.toString(), sourceBranch.getValue() ) );
     }
 
     private TermQueryBuilder isDeleted()
@@ -147,9 +149,9 @@ public class DiffQueryFactory
         return new TermQueryBuilder( BranchIndexPath.STATE.toString(), NodeState.PENDING_DELETE.value() );
     }
 
-    private HasChildQueryBuilder isInBranch( final Branch source )
+    private TermQueryBuilder isInBranch( final Branch source )
     {
-        return new HasChildQueryBuilder( childStorageType.getName(), createWsConstraint( source ) );
+        return createWsConstraint( source );
     }
 
     private TermQueryBuilder createWsConstraint( final Branch branch )
@@ -182,7 +184,7 @@ public class DiffQueryFactory
         private void validate()
         {
             Preconditions.checkNotNull( this.query );
-            Preconditions.checkNotNull( this.childStorageType );
+//            Preconditions.checkNotNull( this.childStorageType );
         }
 
         public DiffQueryFactory build()

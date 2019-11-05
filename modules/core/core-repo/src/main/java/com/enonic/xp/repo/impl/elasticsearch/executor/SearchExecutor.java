@@ -1,5 +1,8 @@
 package com.enonic.xp.repo.impl.elasticsearch.executor;
 
+import java.util.List;
+import java.util.stream.Collectors;
+
 import org.elasticsearch.action.search.SearchRequestBuilder;
 import org.elasticsearch.client.Client;
 import org.slf4j.Logger;
@@ -30,37 +33,40 @@ public class SearchExecutor
         return new Builder( client );
     }
 
-    public SearchResult execute( final SearchRequest searchRequest )
+    public List<SearchResult> execute( final SearchRequest searchRequest )
     {
-        final ElasticsearchQuery query = ESQueryTranslator.translate( searchRequest );
+        final List<ElasticsearchQuery> queries = ESQueryTranslator.translate( searchRequest );
 
-        final SearchMode searchMode = query.getSearchMode();
-        final int size = query.getSize();
-        final boolean anyAggregations = !query.getAggregations().isEmpty();
+        return queries.stream().map( query -> {
+            final SearchMode searchMode = query.getSearchMode();
+            final int size = query.getSize();
+            final boolean anyAggregations = !query.getAggregations().isEmpty();
 
-        if ( searchMode.equals( SearchMode.COUNT ) )
-        {
-            return CountExecutor.create( this.client ).
-                build().
-                execute( query );
-        }
-
-        if ( size == NodeSearchService.GET_ALL_SIZE_FLAG )
-        {
-            if ( anyAggregations )
+            if ( searchMode.equals( SearchMode.COUNT ) )
             {
-                LOG.debug( "Query with size [" + query.getSize() + "] > threshold [" + SCROLL_THRESHOLD +
-                               "] but with aggregations. Scan not possible." );
-            }
-            else
-            {
-                return ScrollExecutor.create( this.client ).
+                return CountExecutor.create( this.client ).
                     build().
                     execute( query );
             }
-        }
 
-        return doSearch( query );
+            if ( size == NodeSearchService.GET_ALL_SIZE_FLAG )
+            {
+                if ( anyAggregations )
+                {
+                    LOG.debug( "Query with size [" + query.getSize() + "] > threshold [" + SCROLL_THRESHOLD +
+                                   "] but with aggregations. Scan not possible." );
+                }
+                else
+                {
+                    return ScrollExecutor.create( this.client ).
+                        build().
+                        execute( query );
+                }
+            }
+
+            return doSearch( query );
+        } ).collect( Collectors.toList() );
+
     }
 
     private SearchResult doSearch( final ElasticsearchQuery query )

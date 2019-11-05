@@ -2,6 +2,7 @@ package com.enonic.xp.repo.impl.elasticsearch.query.translator;
 
 import java.util.List;
 import java.util.Set;
+import java.util.stream.Collectors;
 
 import org.elasticsearch.index.query.QueryBuilder;
 import org.elasticsearch.search.aggregations.AbstractAggregationBuilder;
@@ -11,6 +12,7 @@ import org.elasticsearch.search.suggest.SuggestBuilder;
 import com.enonic.xp.node.NodeCommitQuery;
 import com.enonic.xp.node.NodeQuery;
 import com.enonic.xp.node.NodeVersionQuery;
+import com.enonic.xp.node.NodeVersionsQuery;
 import com.enonic.xp.query.Query;
 import com.enonic.xp.repo.impl.branch.search.NodeBranchQuery;
 import com.enonic.xp.repo.impl.elasticsearch.aggregation.query.AggregationQueryBuilderFactory;
@@ -27,7 +29,7 @@ import com.enonic.xp.repo.impl.version.search.NodeVersionDiffQuery;
 
 public class ESQueryTranslator
 {
-    public static ElasticsearchQuery translate( final SearchRequest request )
+    public static List<ElasticsearchQuery> translate( final SearchRequest request )
     {
         final Query query = request.getQuery();
 
@@ -56,13 +58,18 @@ public class ESQueryTranslator
             return doTranslate( request, new NodeVersionDiffQueryTranslator( (NodeVersionDiffQuery) query ) );
         }
 
+        if ( query instanceof NodeVersionsQuery )
+        {
+            return doTranslate( request, new NodeVersionsQueryTranslator( (NodeVersionsQuery) query ) );
+        }
+
         throw new UnsupportedOperationException( "Queries of type " + query.getClass() + " not implemented yes" );
     }
 
-    private static ElasticsearchQuery doTranslate( final SearchRequest request, final QueryTypeTranslator queryTypeTranslator )
+    private static List<ElasticsearchQuery> doTranslate( final SearchRequest request, final QueryTypeTranslator queryTypeTranslator )
     {
         final ESSource esSource = ESSourceFactory.create( request.getSearchSource() );
-        final QueryBuilder queryBuilder = queryTypeTranslator.createQueryBuilder( esSource.getFilters() );
+        final List<QueryBuilder> queryBuilders = queryTypeTranslator.createQueryBuilder( esSource.getFilters() );
 
         final Query query = request.getQuery();
 
@@ -80,7 +87,7 @@ public class ESQueryTranslator
         final QueryBuilder filterBuilder =
             new FilterBuilderFactory( queryTypeTranslator.getFieldNameResolver() ).create( query.getPostFilters() );
 
-        return ElasticsearchQuery.create().
+        return queryBuilders.stream().map( queryBuilder -> ElasticsearchQuery.create().
             addIndexNames( esSource.getIndexNames() ).
             addIndexTypes( esSource.getIndexTypes() ).
             query( queryBuilder ).
@@ -96,7 +103,7 @@ public class ESQueryTranslator
             batchSize( queryTypeTranslator.getBatchSize() ).
             searchMode( query.getSearchMode() ).
             searchOptimizer( queryTypeTranslator.getSearchOptimizer() ).
-            build();
+            build() ).collect( Collectors.toList() );
     }
 
 }
