@@ -5,6 +5,7 @@ import org.elasticsearch.action.search.SearchType;
 import org.elasticsearch.client.Client;
 
 import com.enonic.xp.node.SearchOptimizer;
+import com.enonic.xp.repo.impl.SearchPreference;
 import com.enonic.xp.repo.impl.elasticsearch.query.ElasticsearchQuery;
 
 public class SearchRequestBuilderFactory
@@ -40,6 +41,7 @@ public class SearchRequestBuilderFactory
             setQuery( query.getQuery() ).
             setPostFilter( query.getFilter() ).
             setFrom( query.getFrom() ).
+            setPreference( SearchPreference.LOCAL.getName() ).
             setSize( resolvedSize );
 
         query.getSortBuilders().forEach( searchRequestBuilder::addSort );
