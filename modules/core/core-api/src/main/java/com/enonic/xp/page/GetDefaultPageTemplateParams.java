@@ -4,6 +4,7 @@ package com.enonic.xp.page;
 import com.google.common.annotations.Beta;
 
 import com.enonic.xp.content.ContentId;
+import com.enonic.xp.content.ContentPath;
 import com.enonic.xp.schema.content.ContentTypeName;
 
 @Beta
@@ -11,17 +12,25 @@ public class GetDefaultPageTemplateParams
 {
     private final ContentId site;
 
+    private final ContentPath sitePath;
+
     private final ContentTypeName contentType;
 
     public GetDefaultPageTemplateParams( final Builder builder )
     {
         site = builder.site;
+        sitePath = builder.sitePath;
         contentType = builder.contentType;
     }
 
     public ContentId getSite()
     {
         return site;
+    }
+
+    public ContentPath getSitePath()
+    {
+        return sitePath;
     }
 
     public ContentTypeName getContentType()
@@ -38,11 +47,19 @@ public class GetDefaultPageTemplateParams
     {
         private ContentId site;
 
+        private ContentPath sitePath;
+
         private ContentTypeName contentType;
 
         public Builder site( final ContentId site )
         {
             this.site = site;
+            return this;
+        }
+
+        public Builder sitePath( final ContentPath sitePath )
+        {
+            this.sitePath = sitePath;
             return this;
         }
 

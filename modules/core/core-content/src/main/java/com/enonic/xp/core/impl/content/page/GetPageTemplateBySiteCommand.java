@@ -7,22 +7,39 @@ import com.enonic.xp.content.ContentService;
 import com.enonic.xp.content.FindContentByParentParams;
 import com.enonic.xp.content.FindContentByParentResult;
 import com.enonic.xp.core.impl.content.ContentServiceImpl;
+import com.enonic.xp.data.ValueFactory;
 import com.enonic.xp.page.PageTemplate;
 import com.enonic.xp.page.PageTemplates;
+import com.enonic.xp.query.filter.ValueFilter;
+import com.enonic.xp.schema.content.ContentTypeName;
 
 final class GetPageTemplateBySiteCommand
 {
     private ContentService contentService;
 
+    private ContentPath sitePath;
+
     private ContentId siteId;
+
+    private ContentTypeName supportedContentType;
 
     public PageTemplates execute()
     {
         final PageTemplates.Builder pageTemplatesBuilder = PageTemplates.create();
-        final Content site = contentService.getById( siteId );
-        final ContentPath pageTemplatesFolderPath = ContentPath.from( site.getPath(), ContentServiceImpl.TEMPLATES_FOLDER_NAME );
-        final FindContentByParentResult result =
-            contentService.findByParent( FindContentByParentParams.create().parentPath( pageTemplatesFolderPath ).build() );
+        if ( sitePath == null) {
+            sitePath = contentService.getById( siteId ).getPath();
+        }
+        final ContentPath pageTemplatesFolderPath = ContentPath.from( sitePath, ContentServiceImpl.TEMPLATES_FOLDER_NAME );
+        final FindContentByParentParams.Builder params = FindContentByParentParams.create().parentPath( pageTemplatesFolderPath );
+        if ( supportedContentType != null )
+        {
+            final ValueFilter supportsContentTypeFilter = ValueFilter.create().
+                fieldName( "data.supports" ).
+                addValue( ValueFactory.newString( supportedContentType.toString() ) ).
+                build();
+            params.queryFilter( supportsContentTypeFilter );
+        }
+        final FindContentByParentResult result = contentService.findByParent( params.build() );
         for ( final Content content : result.getContents() )
         {
             if ( content instanceof PageTemplate )
@@ -31,6 +48,12 @@ final class GetPageTemplateBySiteCommand
             }
         }
         return pageTemplatesBuilder.build();
+    }
+
+    public GetPageTemplateBySiteCommand sitePath( final ContentPath sitePath )
+    {
+        this.sitePath = sitePath;
+        return this;
     }
 
     public GetPageTemplateBySiteCommand site( final ContentId siteId )
@@ -42,6 +65,12 @@ final class GetPageTemplateBySiteCommand
     public GetPageTemplateBySiteCommand contentService( final ContentService contentService )
     {
         this.contentService = contentService;
+        return this;
+    }
+
+    public GetPageTemplateBySiteCommand supports( final ContentTypeName supportedContentType )
+    {
+        this.supportedContentType = supportedContentType;
         return this;
     }
 }
