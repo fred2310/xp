@@ -1,5 +1,10 @@
 package com.enonic.xp.repo.impl.repository;
 
+import java.util.Set;
+import java.util.stream.Collectors;
+
+import com.enonic.xp.branch.Branch;
+import com.enonic.xp.branch.Branches;
 import com.enonic.xp.repository.RepositoryId;
 
 public class IndexNameResolver
@@ -15,9 +20,21 @@ public class IndexNameResolver
         return STORAGE_INDEX_PREFIX + DIVIDER + repositoryId.toString();
     }
 
-    public static String resolveSearchIndexName( final RepositoryId repositoryId )
+    public static Set<String> resolveSearchIndexNames( final RepositoryId repositoryId, final Branches branches )
     {
-        return SEARCH_INDEX_PREFIX + DIVIDER + repositoryId.toString();
+        return branches.stream().
+            map( branch -> IndexNameResolver.resolveSearchIndexName( repositoryId, branch ) ).
+            collect( Collectors.toSet() );
+    }
+
+    public static String resolveSearchIndexName( final RepositoryId repositoryId, final Branch branch )
+    {
+        return SEARCH_INDEX_PREFIX + DIVIDER + repositoryId.toString() + DIVIDER + branch.getValue().toLowerCase();
+    }
+
+    public static String resolveSearchIndexPrefix( final RepositoryId repositoryId )
+    {
+        return SEARCH_INDEX_PREFIX + DIVIDER + repositoryId.toString() + DIVIDER + "*";
     }
 
 

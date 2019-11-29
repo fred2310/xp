@@ -1,5 +1,6 @@
 package com.enonic.xp.repo.impl.search;
 
+import com.enonic.xp.branch.Branch;
 import com.enonic.xp.repo.impl.StorageName;
 import com.enonic.xp.repository.RepositoryId;
 
@@ -17,9 +18,10 @@ public class SearchStorageName
         this.name = name;
     }
 
-    public static SearchStorageName from( final RepositoryId repositoryId )
+    public static SearchStorageName from( final RepositoryId repositoryId, final Branch branch )
     {
-        return new SearchStorageName( STORAGE_INDEX_PREFIX + DIVIDER + repositoryId.toString() );
+        return new SearchStorageName(
+            STORAGE_INDEX_PREFIX + DIVIDER + repositoryId.toString() + DIVIDER + branch.getValue().toLowerCase() );
     }
 
 

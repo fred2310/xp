@@ -44,6 +44,7 @@ import org.slf4j.LoggerFactory;
 import com.google.common.base.Stopwatch;
 
 import com.enonic.xp.branch.Branch;
+import com.enonic.xp.context.ContextAccessor;
 import com.enonic.xp.index.IndexType;
 import com.enonic.xp.node.NodeId;
 import com.enonic.xp.repo.impl.index.ApplyMappingRequest;
@@ -113,7 +114,7 @@ public class IndexServiceInternalImpl
     public void copy( final NodeId nodeId, final RepositoryId repositoryId, final Branch source, final Branch target )
     {
         final GetRequest request = new GetRequestBuilder( this.client, GetAction.INSTANCE ).setId( nodeId.toString() ).
-            setIndex( IndexNameResolver.resolveSearchIndexName( repositoryId ) ).
+            setIndex( IndexNameResolver.resolveSearchIndexName( repositoryId, source ) ).
             setType( source.getValue() ).
             request();
 
@@ -128,7 +129,7 @@ public class IndexServiceInternalImpl
 
         final IndexRequest req = Requests.indexRequest().
             id( nodeId.toString() ).
-            index( IndexNameResolver.resolveSearchIndexName( repositoryId ) ).
+            index( IndexNameResolver.resolveSearchIndexName( repositoryId, target ) ).
             type( target.getValue() ).
             source( sourceValues ).
             refresh( false );
@@ -194,8 +195,8 @@ public class IndexServiceInternalImpl
             return null;
         }
 
-        final String indexName = IndexType.SEARCH == indexType
-            ? IndexNameResolver.resolveSearchIndexName( repositoryId )
+        final String indexName =
+            IndexType.SEARCH == indexType ? IndexNameResolver.resolveSearchIndexName( repositoryId, ContextAccessor.current().getBranch() )
             : IndexNameResolver.resolveStorageIndexName( repositoryId );
 
         final ImmutableOpenMap<String, Settings> settingsMap =
@@ -213,8 +214,7 @@ public class IndexServiceInternalImpl
             return null;
         }
 
-        final String indexName = IndexType.SEARCH == indexType
-            ? IndexNameResolver.resolveSearchIndexName( repositoryId )
+        final String indexName = IndexType.SEARCH == indexType ? IndexNameResolver.resolveSearchIndexName( repositoryId, branch )
             : IndexNameResolver.resolveStorageIndexName( repositoryId );
 
         final ImmutableOpenMap<String, ImmutableOpenMap<String, MappingMetaData>> repoMappings =

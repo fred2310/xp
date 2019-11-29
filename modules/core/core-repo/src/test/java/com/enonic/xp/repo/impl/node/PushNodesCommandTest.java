@@ -97,6 +97,9 @@ public class PushNodesCommandTest
             build() );
 
         final PushNodesResult result = pushNodes( NodeIds.from( node.id() ), WS_OTHER );
+
+        refresh();
+
         assertEquals( 1, result.getSuccessful().getSize() );
 
         final FindNodesByQueryResult allNodesInOther = CTX_OTHER.callWith( () -> FindNodesByQueryCommand.create().
@@ -183,6 +186,9 @@ public class PushNodesCommandTest
 
         //Pushed the renames content
         result = pushNodes( NodeIds.from( node.id() ), WS_OTHER );
+
+        refresh();
+
         assertEquals( 1, result.getSuccessful().getSize() );
         assertNull( getNodeByPathInOther( NodePath.create( "/my-node" ).build() ) );
         assertNotNull( getNodeByPathInOther( NodePath.create( "/my-node-renamed" ).build() ) );

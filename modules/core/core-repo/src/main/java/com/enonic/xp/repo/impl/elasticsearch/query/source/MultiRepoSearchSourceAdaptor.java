@@ -18,9 +18,10 @@ class MultiRepoSearchSourceAdaptor
     static ESSource adapt( final MultiRepoSearchSource source )
     {
         final ESSource.Builder esSourceBuilder = ESSource.create().
-            indexNames(
-                source.getRepositoryIds().stream().map( AbstractSourceAdapter::createSearchIndexName ).collect( Collectors.toSet() ) ).
-            indexTypes( source.getAllBranches().stream().map( AbstractSourceAdapter::createSearchTypeName ).collect( Collectors.toSet() ) ).
+            indexNames( source.getSources().stream().map(
+                singleRepoSource -> AbstractSourceAdapter.createSearchIndexName( singleRepoSource.getRepositoryId(),
+                                                                                 singleRepoSource.getBranch() ) ).collect(
+                Collectors.toSet() ) ).
             addFilter( createSourceFilters( source ) );
 
         return esSourceBuilder.build();
@@ -76,7 +77,7 @@ class MultiRepoSearchSourceAdaptor
         }
 
         return IndicesFilter.create().
-            addIndex( createSearchIndexName( repoId ) ).
+            addIndex( createSearchIndexName( repoId, entry.getBranch() ) ).
             filter( filters.
                 build() ).
             build();

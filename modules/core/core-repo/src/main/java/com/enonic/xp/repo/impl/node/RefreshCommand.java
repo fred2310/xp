@@ -35,12 +35,12 @@ public class RefreshCommand
 
         if ( refreshMode.equals( RefreshMode.ALL ) )
         {
-            indices.add( IndexNameResolver.resolveSearchIndexName( repositoryId ) );
+            indices.add( IndexNameResolver.resolveSearchIndexName( repositoryId, ContextAccessor.current().getBranch() ) );
             indices.add( IndexNameResolver.resolveStorageIndexName( repositoryId ) );
         }
         else if ( refreshMode.equals( RefreshMode.SEARCH ) )
         {
-            indices.add( IndexNameResolver.resolveSearchIndexName( repositoryId ) );
+            indices.add( IndexNameResolver.resolveSearchIndexName( repositoryId, ContextAccessor.current().getBranch() ) );
         }
         else
         {
