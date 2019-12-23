@@ -1,54 +1,67 @@
 package com.enonic.xp.repo.impl.node;
 
-import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.Disabled;
+import java.util.concurrent.TimeUnit;
+
 import org.junit.jupiter.api.Test;
+import org.openjdk.jmh.annotations.Benchmark;
+import org.openjdk.jmh.annotations.Mode;
+import org.openjdk.jmh.annotations.Scope;
+import org.openjdk.jmh.annotations.Setup;
+import org.openjdk.jmh.annotations.State;
+import org.openjdk.jmh.annotations.TearDown;
+import org.openjdk.jmh.infra.Blackhole;
+import org.openjdk.jmh.runner.Runner;
+import org.openjdk.jmh.runner.options.Options;
+import org.openjdk.jmh.runner.options.OptionsBuilder;
+import org.openjdk.jmh.runner.options.TimeValue;
 
-import com.google.common.base.Stopwatch;
-
-import com.enonic.xp.node.CreateNodeParams;
-import com.enonic.xp.node.Node;
-import com.enonic.xp.node.NodePath;
 import com.enonic.xp.node.ResolveSyncWorkResult;
 
 public class ResolveSyncWorkPerformanceTest
-    extends AbstractNodeTest
 {
-    @BeforeEach
-    public void setUp()
-        throws Exception
-    {
-        this.createDefaultRootNode();
-    }
-
-    @Disabled
     @Test
     public void testReferencePerformance()
         throws Exception
     {
-        final Node rootNode = createNode( CreateNodeParams.create().
-            name( "rootNode" ).
-            parent( NodePath.ROOT ).
-            build(), false );
+        Options opt = new OptionsBuilder().include( this.getClass().getName() + ".*" ).mode( Mode.AverageTime ).timeUnit(
+            TimeUnit.SECONDS ).warmupTime( TimeValue.seconds( 1 ) ).warmupIterations( 20 ).measurementTime(
+            TimeValue.seconds( 1 ) ).measurementIterations( 10 ).threads( 1 ).forks( 1 ).shouldFailOnError( true ).build();
 
-        createNodes( rootNode, 40, 3, 1 );
-
-        refresh();
-
-        final Stopwatch started = Stopwatch.createStarted();
-
-        final ResolveSyncWorkResult resolvedNodes = ResolveSyncWorkCommand.create().
-            nodeId( rootNode.id() ).
-            target( CTX_OTHER.getBranch() ).
-            indexServiceInternal( this.indexServiceInternal ).
-            storageService( this.storageService ).
-            searchService( this.searchService ).
-            build().
-            execute();
-
-        started.stop();
-
-        System.out.println( resolvedNodes.getSize() + " in " + started.toString() );
+        new Runner( opt ).run();
     }
 
+    @State(Scope.Benchmark)
+    public static class BenchmarkState
+        extends ResolveSyncWorkPerformanceBootstrap
+    {
+        ResolveSyncWorkCommand.Builder command;
+
+        @Setup
+        public void setup()
+        {
+            startClient();
+            setupServices();
+            command = prepareResolveSyncWorkCommandBuilder();
+        }
+
+        @TearDown
+        public void teardown()
+            throws Exception
+        {
+            stopClient();
+        }
+    }
+
+    @Benchmark
+    public void es2( BenchmarkState state, Blackhole bh )
+    {
+        bh.consume( ResolveSyncWorkPerformanceBootstrap.CONTEXT_DRAFT.callWith( () -> run( state.command ) ) );
+    }
+
+    int run( ResolveSyncWorkCommand.Builder command )
+    {
+        final ResolveSyncWorkResult resolvedNodes = command.build().execute();
+
+        return resolvedNodes.getSize();
+    }
 }

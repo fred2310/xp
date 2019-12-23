@@ -43,14 +43,14 @@ public class EmbeddedElasticsearchServer
         snaphotsDir.mkdir();
 
         Settings.Builder testServerSetup = Settings.settingsBuilder().
-            put( "name", "repo-node-" + this.now ).
+            put( "name", "repo-node-1" ).
             put( "client", "false" ).
             put( "data", "true" ).
             put( "local", "true" ).
             put( "path.data", pathData.getPath() ).
             put( "path.home", pathHome.getPath() ).
             put( "path.repo", this.snaphotsDir.getPath() ).
-            put( "cluster.name", "repo-test-cluster-" + this.now ).
+            put( "cluster.name", "repo-test-cluster-1" ).
             put( "http.enabled", "false" ).
             put( "index.translog.durability", "async" ).
             put( "index.translog.sync_interval", "15m" ).
@@ -71,7 +71,7 @@ public class EmbeddedElasticsearchServer
     {
         LOG.info( " --- Shutting down ES integration test server instance" );
         node.close();
-        deleteDataDirectory();
+        //deleteDataDirectory();
     }
 
     private void deleteDataDirectory()
