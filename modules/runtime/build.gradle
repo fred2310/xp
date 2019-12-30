@@ -54,13 +54,14 @@ addBundle( "io.dropwizard.metrics:metrics-core:${dropwizardMetricsVersion}", 8 )
 addBundle( "io.dropwizard.metrics:metrics-json:${dropwizardMetricsVersion}", 8 )
 addBundle( "io.dropwizard.metrics:metrics-jvm:${dropwizardMetricsVersion}", 8 )
 addBundle( "io.dropwizard.metrics:metrics-jetty9:${dropwizardMetricsVersion}", 8 )
+addBundle( "com.hazelcast:hazelcast:${hazelcastVersion}", 8 )
 addBundle( 'org.jparsec:jparsec:3.1', 8 )
 addBundle( project( ':repack:repack-elasticsearch' ), 8 )
 addBundle( project( ':repack:repack-resteasy' ), 8 )
-addBundle( project( ':repack:repack-javax-cache-api' ), 8 )
-addBundle( 'org.apache.ignite:ignite-core:2.3.0', 8 )
-addBundle( 'org.apache.ignite:ignite-osgi:2.3.0', 8 )
-addBundle( 'org.apache.ignite:ignite-web:2.3.0', 8 )
+//addBundle( project( ':repack:repack-javax-cache-api' ), 8 )
+//addBundle( 'org.apache.ignite:ignite-core:2.3.0', 8 )
+//addBundle( 'org.apache.ignite:ignite-osgi:2.3.0', 8 )
+//addBundle( 'org.apache.ignite:ignite-web:2.3.0', 8 )
 
 addBundle( project( ':core:core-internal' ), 9 )
 
@@ -81,6 +82,7 @@ addBundle( project( ':core:core-image' ), 22 )
 addBundle( project( ':core:core-export' ), 22 )
 addBundle( project( ':core:core-mail' ), 22 )
 addBundle( project( ':core:core-elasticsearch' ), 22 )
+addBundle( project( ':core:core-hazelcast' ), 22 )
 //TODO Java10
 //addBundle( project( ':core:core-ignite' ), 22 )
 addBundle( project( ':core:core-content' ), 22 )
@@ -115,7 +117,7 @@ addBundle( project( ':web:web-impl' ), 26 )
 addBundle( project( ':web:web-vhost' ), 26 )
 addBundle( project( ':web:web-dos' ), 26 )
 addBundle( project( ':web:web-dispatch' ), 26 )
-addBundle( project( ':web:web-session' ), 26 )
+//addBundle( project( ':web:web-session' ), 26 )
 addBundle( project( ':web:web-header' ), 26 )
 
 // JaxRs app
@@ -217,7 +219,6 @@ task distZip( type: Zip, dependsOn: installDist ) {
     from installDir
     // into archiveBase
 }
-build.dependsOn distZip
 
 task run( type: Exec, dependsOn: 'installDist' ) {
     description = 'Starts the server (use -Pdev for dev-mode or -Pdebug for debug-mode).'
@@ -225,7 +226,7 @@ task run( type: Exec, dependsOn: 'installDist' ) {
     workingDir "$buildDir/install/bin"
 
     doFirst {
-        if ( System.getProperty( "os.name" ).equalsIgnoreCase( 'windows' ) )
+        if ( System.getProperty( "os.name" ).startsWith( 'Windows' ) )
         {
             commandLine 'cmd', '/c', 'server.bat'
         }

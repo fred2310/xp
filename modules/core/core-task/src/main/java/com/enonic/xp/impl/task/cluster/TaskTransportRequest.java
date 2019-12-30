@@ -1,30 +1,20 @@
 package com.enonic.xp.impl.task.cluster;
 
-import java.io.IOException;
-
-import org.elasticsearch.common.io.stream.StreamInput;
-import org.elasticsearch.common.io.stream.StreamOutput;
-import org.elasticsearch.transport.TransportRequest;
+import java.io.Serializable;
 
 import com.enonic.xp.task.TaskId;
 
 public final class TaskTransportRequest
-    extends TransportRequest
+    implements Serializable
 {
     public enum Type
     {
-        ALL,
-        RUNNING,
-        BY_ID
+        ALL, RUNNING, BY_ID
     }
 
-    private Type type;
+    private final Type type;
 
-    private TaskId taskId;
-
-    public TaskTransportRequest()
-    {
-    }
+    private final TaskId taskId;
 
     public TaskTransportRequest( final Type type, final TaskId taskId )
     {
@@ -42,25 +32,30 @@ public final class TaskTransportRequest
         return taskId;
     }
 
-    @Override
-    public void readFrom( final StreamInput streamInput )
-        throws IOException
+    private Object writeReplace()
     {
-        type = Type.values()[streamInput.readInt()];
-        if ( type == Type.BY_ID )
-        {
-            taskId = TaskId.from( streamInput.readString() );
-        }
+        return new SerializedForm( this );
     }
 
-    @Override
-    public void writeTo( final StreamOutput streamOutput )
-        throws IOException
+    static class SerializedForm
+        implements Serializable
     {
-        streamOutput.writeInt( type.ordinal() );
-        if ( type == Type.BY_ID )
+        private final Type type;
+
+        private final String taskId;
+
+        SerializedForm( TaskTransportRequest request )
         {
-            streamOutput.writeString( taskId.toString() );
+            type = request.getType();
+            taskId = type == Type.BY_ID ? request.taskId.toString() : null;
         }
+
+        Object readResolve()
+        {
+            TaskId taskIdResolved = type == Type.BY_ID ? TaskId.from( taskId ) : null;
+            return new TaskTransportRequest( type, taskIdResolved );
+        }
+
+        private static final long serialVersionUID = 0;
     }
 }

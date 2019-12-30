@@ -1,25 +1,14 @@
 package com.enonic.xp.core.impl.event.cluster;
 
-import java.io.IOException;
+import java.io.Serializable;
 import java.util.Map;
-
-import org.elasticsearch.common.io.stream.StreamInput;
-import org.elasticsearch.common.io.stream.StreamOutput;
-import org.elasticsearch.common.io.stream.Streamable;
-import org.elasticsearch.transport.TransportRequest;
 
 import com.enonic.xp.event.Event;
 
 public final class SendEventRequest
-    extends TransportRequest
-    implements Streamable
+    implements Serializable
 {
-    private Event event;
-
-    public SendEventRequest()
-    {
-        this( null );
-    }
+    private final Event event;
 
     public SendEventRequest( final Event event )
     {
@@ -31,35 +20,43 @@ public final class SendEventRequest
         return this.event;
     }
 
-    @Override
-    public void readFrom( final StreamInput streamInput )
-        throws IOException
-    {
-        final String type = streamInput.readString();
-        final long timestamp = streamInput.readLong();
-        final boolean distributed = streamInput.readBoolean();
-        final Map<String, Object> data = streamInput.readMap();
 
-        final Event.Builder eventBuilder = Event.create( type ).
-            timestamp( timestamp ).
-            distributed( distributed );
-        for ( Map.Entry<String, Object> dataEntry : data.entrySet() )
-        {
-            eventBuilder.value( dataEntry.getKey(), dataEntry.getValue() );
-        }
-        this.event = eventBuilder.build();
+    private Object writeReplace()
+    {
+        return new SerializedForm( this );
     }
 
-    @Override
-    public void writeTo( final StreamOutput streamOutput )
-        throws IOException
+    static class SerializedForm
+        implements Serializable
     {
-        if ( event != null )
+        final String type;
+
+        final long timestamp;
+
+        final boolean distributed;
+
+        final Map<String, Object> data;
+
+        SerializedForm( SendEventRequest request )
         {
-            streamOutput.writeString( event.getType() );
-            streamOutput.writeLong( event.getTimestamp() );
-            streamOutput.writeBoolean( event.isDistributed() );
-            streamOutput.writeMap( event.getData() );
+            Event event = request.event;
+            type = event.getType();
+            timestamp = event.getTimestamp();
+            distributed = event.isDistributed();
+            data = event.getData();
         }
+
+        Object readResolve()
+        {
+            final Event.Builder eventBuilder = Event.create( type ).
+                timestamp( timestamp ).
+                distributed( distributed );
+
+            data.forEach( eventBuilder::value );
+
+            return new SendEventRequest( eventBuilder.build() );
+        }
+
+        private static final long serialVersionUID = 0;
     }
 }

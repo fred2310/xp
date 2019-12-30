@@ -1,15 +1,22 @@
 package com.enonic.xp.impl.task.cluster;
 
+import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
+import java.util.concurrent.ExecutionException;
+import java.util.concurrent.Future;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.TimeoutException;
 
-import org.elasticsearch.cluster.ClusterService;
-import org.elasticsearch.cluster.node.DiscoveryNode;
-import org.elasticsearch.cluster.node.DiscoveryNodes;
-import org.elasticsearch.transport.TransportRequest;
-import org.elasticsearch.transport.TransportRequestOptions;
-import org.elasticsearch.transport.TransportService;
+import org.osgi.service.component.annotations.Activate;
 import org.osgi.service.component.annotations.Component;
+import org.osgi.service.component.annotations.Deactivate;
 import org.osgi.service.component.annotations.Reference;
+
+import com.hazelcast.core.HazelcastInstance;
+import com.hazelcast.core.IExecutorService;
+import com.hazelcast.core.Member;
+import com.hazelcast.util.ExceptionUtil;
 
 import com.enonic.xp.task.TaskId;
 import com.enonic.xp.task.TaskInfo;
@@ -18,56 +25,74 @@ import com.enonic.xp.task.TaskInfo;
 public final class TaskTransportRequestSenderImpl
     implements TaskTransportRequestSender
 {
-    static final long TRANSPORT_REQUEST_TIMEOUT = 5_000l; //5s 
+    private static final long TRANSPORT_REQUEST_TIMEOUT_SECONDS = 5L;
 
     public static final String ACTION = "xp/task";
 
-    private ClusterService clusterService;
+    private HazelcastInstance hazelcastInstance;
 
-    private TransportService transportService;
+    private IExecutorService executorService;
+
+
+    @Activate
+    public void activate()
+    {
+        executorService = hazelcastInstance.getExecutorService( ACTION );
+    }
+
+    @Deactivate
+    public void deactivate()
+    {
+        executorService.shutdown();
+    }
 
     @Override
     public List<TaskInfo> getByTaskId( final TaskId taskId )
     {
-        final TransportRequest transportRequest = new TaskTransportRequest( TaskTransportRequest.Type.BY_ID, taskId );
-        return send( transportRequest );
+        return send( new TaskTransportRequest( TaskTransportRequest.Type.BY_ID, taskId ) );
     }
 
     @Override
     public List<TaskInfo> getRunningTasks()
     {
-        final TransportRequest transportRequest = new TaskTransportRequest( TaskTransportRequest.Type.RUNNING, null );
-        return send( transportRequest );
+        return send( new TaskTransportRequest( TaskTransportRequest.Type.RUNNING, null ) );
     }
 
     @Override
     public List<TaskInfo> getAllTasks()
     {
-        final TransportRequest transportRequest = new TaskTransportRequest( TaskTransportRequest.Type.ALL, null );
-        return send( transportRequest );
+        return send( new TaskTransportRequest( TaskTransportRequest.Type.ALL, null ) );
     }
 
-    private List<TaskInfo> send( final TransportRequest transportRequest )
+    private List<TaskInfo> send( final TaskTransportRequest request )
     {
-        final DiscoveryNodes discoveryNodes = this.clusterService.state().nodes();
-        final TaskTransportResponseHandler responseHandler = new TaskTransportResponseHandler( discoveryNodes.size() );
-        for ( final DiscoveryNode discoveryNode : discoveryNodes )
+        final List<TaskInfo> taskInfoBuilder = new ArrayList<>();
+        final Map<Member, Future<TaskTransportResponse>> resultsFromMembers =
+            executorService.submitToAllMembers( new TaskTransportResponseHandler( request ) );
+
+        for ( Future<TaskTransportResponse> responseFuture : resultsFromMembers.values() )
         {
-            final TransportRequestOptions options = TransportRequestOptions.builder().withTimeout( TRANSPORT_REQUEST_TIMEOUT ).build();
-            this.transportService.sendRequest( discoveryNode, ACTION, transportRequest, options, responseHandler );
+            try
+            {
+                TaskTransportResponse response = responseFuture.get( TRANSPORT_REQUEST_TIMEOUT_SECONDS, TimeUnit.SECONDS );
+                taskInfoBuilder.addAll( response.getTaskInfos() );
+            }
+            catch ( TimeoutException e )
+            {
+                resultsFromMembers.values().forEach( f -> f.cancel( true ) );
+                throw new RuntimeException( e );
+            }
+            catch ( InterruptedException | ExecutionException e )
+            {
+                throw ExceptionUtil.rethrow( e );
+            }
         }
-        return responseHandler.getTaskInfos();
+        return taskInfoBuilder;
     }
 
     @Reference
-    public void setClusterService( final ClusterService clusterService )
+    public void setHazelcastInstance( final HazelcastInstance hazelcastInstance )
     {
-        this.clusterService = clusterService;
-    }
-
-    @Reference
-    public void setTransportService( final TransportService transportService )
-    {
-        this.transportService = transportService;
+        this.hazelcastInstance = hazelcastInstance;
     }
 }

@@ -1,12 +1,9 @@
 package com.enonic.xp.impl.task.cluster;
 
-import java.io.IOException;
+import java.io.Serializable;
 import java.time.Instant;
+import java.util.Arrays;
 import java.util.List;
-
-import org.elasticsearch.common.io.stream.StreamInput;
-import org.elasticsearch.common.io.stream.StreamOutput;
-import org.elasticsearch.transport.TransportResponse;
 
 import com.google.common.collect.ImmutableList;
 
@@ -18,18 +15,13 @@ import com.enonic.xp.task.TaskProgress;
 import com.enonic.xp.task.TaskState;
 
 public final class TaskTransportResponse
-    extends TransportResponse
+    implements Serializable
 {
-    private List<TaskInfo> taskInfos;
-
-    public TaskTransportResponse()
-    {
-        this( null );
-    }
+    private final ImmutableList<TaskInfo> taskInfos;
 
     public TaskTransportResponse( final List<TaskInfo> taskInfos )
     {
-        this.taskInfos = taskInfos;
+        this.taskInfos = ImmutableList.copyOf( taskInfos );
     }
 
     public List<TaskInfo> getTaskInfos()
@@ -37,78 +29,91 @@ public final class TaskTransportResponse
         return taskInfos;
     }
 
-    @Override
-    public void readFrom( final StreamInput streamInput )
-        throws IOException
+    private Object writeReplace()
     {
-        final ImmutableList.Builder<TaskInfo> taskInfos = ImmutableList.builder();
-        final int taskInfoCount = streamInput.readInt();
-        for ( int i = 0; i < taskInfoCount; i++ )
+        return new SerializedForm( this );
+    }
+
+    static class SerializedForm
+        implements Serializable
+    {
+        private final SerializedFormTaskInfo[] taskInfos;
+
+        SerializedForm( TaskTransportResponse response )
         {
-            TaskInfo taskInfo = readTaskInfoFrom( streamInput );
-            taskInfos.add( taskInfo );
+            taskInfos = response.taskInfos.stream().map( SerializedFormTaskInfo::new ).toArray( SerializedFormTaskInfo[]::new );
         }
 
-        this.taskInfos = taskInfos.build();
-    }
-
-    private TaskInfo readTaskInfoFrom( final StreamInput streamInput )
-        throws IOException
-    {
-        return TaskInfo.create().
-            id( TaskId.from( streamInput.readString() ) ).
-            name( streamInput.readString() ).
-            description( streamInput.readString() ).
-            state( TaskState.values()[streamInput.readInt()] ).
-            application( ApplicationKey.from( streamInput.readString() ) ).
-            user( PrincipalKey.from( streamInput.readString() ) ).
-            startTime( Instant.parse( streamInput.readString() ) ).
-            progress( readTaskProgressFrom( streamInput ) ).
-            build();
-    }
-
-    private TaskProgress readTaskProgressFrom( final StreamInput streamInput )
-        throws IOException
-    {
-        return TaskProgress.create().
-            current( streamInput.readInt() ).
-            total( streamInput.readInt() ).
-            info( streamInput.readString() ).
-            build();
-    }
-
-    @Override
-    public void writeTo( final StreamOutput streamOutput )
-        throws IOException
-    {
-        if ( taskInfos != null )
+        private Object readResolve()
         {
-            streamOutput.writeInt( taskInfos.size() );
-            for ( TaskInfo taskInfo : taskInfos )
-            {
-                writeTo( streamOutput, taskInfo );
-            }
+            ImmutableList<TaskInfo> taskInfoList =
+                Arrays.stream( taskInfos ).map( SerializedForm::readResolveTaskInfo ).collect( ImmutableList.toImmutableList() );
+            return new TaskTransportResponse( taskInfoList );
         }
+
+        private static TaskInfo readResolveTaskInfo( SerializedFormTaskInfo serializedFormTaskInfo )
+        {
+            final TaskProgress taskProgress = TaskProgress.create().
+                current( serializedFormTaskInfo.progressCurrent ).
+                total( serializedFormTaskInfo.progressTotal ).
+                info( serializedFormTaskInfo.progressInfo ).
+                build();
+
+            return TaskInfo.create().
+                id( TaskId.from( serializedFormTaskInfo.taskId ) ).
+                name( serializedFormTaskInfo.name ).
+                description( serializedFormTaskInfo.description ).
+                state( serializedFormTaskInfo.state ).
+                application( ApplicationKey.from( serializedFormTaskInfo.application ) ).
+                user( PrincipalKey.from( serializedFormTaskInfo.user ) ).
+                startTime( serializedFormTaskInfo.startTime ).
+                progress( taskProgress ).
+                build();
+        }
+
+        private static final long serialVersionUID = 0;
     }
 
-    private void writeTo( final StreamOutput streamOutput, final TaskInfo taskInfo )
-        throws IOException
+    static class SerializedFormTaskInfo
+        implements Serializable
     {
-        streamOutput.writeString( taskInfo.getId().toString() );
-        streamOutput.writeString( taskInfo.getName() );
-        streamOutput.writeString( taskInfo.getDescription() );
-        streamOutput.writeInt( taskInfo.getState().ordinal() );
-        streamOutput.writeString( taskInfo.getApplication().toString() );
-        streamOutput.writeString( taskInfo.getUser().toString() );
-        streamOutput.writeString( taskInfo.getStartTime().toString() );
-        writeTo( streamOutput, taskInfo.getProgress() );
-    }
+        private final String taskId;
 
-    private void writeTo( final StreamOutput streamOutput, final TaskProgress taskProgress )
-        throws IOException
-    {
-        streamOutput.writeInt( taskProgress.getCurrent() );
-        streamOutput.writeInt( taskProgress.getTotal() );
-        streamOutput.writeString( taskProgress.getInfo() );
+        private final String name;
+
+        private final String description;
+
+        private final TaskState state;
+
+        private final int progressCurrent;
+
+        private final int progressTotal;
+
+        private final String progressInfo;
+
+        private final String application;
+
+        private final String user;
+
+        private final Instant startTime;
+
+        SerializedFormTaskInfo( TaskInfo taskInfo )
+        {
+
+            this.taskId = taskInfo.getId().toString();
+            this.name = taskInfo.getName();
+            this.description = taskInfo.getDescription();
+            this.state = taskInfo.getState();
+            this.application = taskInfo.getApplication().getName();
+            this.user = taskInfo.getUser().toString();
+            this.startTime = taskInfo.getStartTime();
+
+            TaskProgress taskProgress = taskInfo.getProgress();
+            this.progressCurrent = taskProgress.getCurrent();
+            this.progressTotal = taskProgress.getTotal();
+            this.progressInfo = taskProgress.getInfo();
+        }
+
+        private static final long serialVersionUID = 0;
     }
 }

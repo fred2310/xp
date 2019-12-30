@@ -1,90 +1,62 @@
 package com.enonic.xp.impl.task.cluster;
 
+import java.io.Serializable;
+import java.util.Collections;
 import java.util.List;
+import java.util.Optional;
+import java.util.concurrent.Callable;
 
-import org.elasticsearch.threadpool.ThreadPool;
-import org.elasticsearch.transport.TransportException;
-import org.elasticsearch.transport.TransportResponseHandler;
+import org.osgi.framework.BundleContext;
+import org.osgi.framework.FrameworkUtil;
+import org.osgi.framework.ServiceReference;
 
-import com.google.common.base.Preconditions;
-import com.google.common.collect.ImmutableList;
-
+import com.enonic.xp.impl.task.TaskManager;
 import com.enonic.xp.task.TaskInfo;
-import com.enonic.xp.util.Exceptions;
 
 public class TaskTransportResponseHandler
-    implements TransportResponseHandler<TaskTransportResponse>
+    implements Callable<TaskTransportResponse>, Serializable
 {
-    private static final long THREAD_TIMEOUT = TaskTransportRequestSenderImpl.TRANSPORT_REQUEST_TIMEOUT + 1_000l;
+    private final TaskTransportRequest request;
 
-    private final ImmutableList.Builder<TaskInfo> taskInfos = ImmutableList.builder();
-
-    private int awaitingResponseCount;
-
-    private TransportException transportException;
-
-    public TaskTransportResponseHandler( final int responseCount )
+    public TaskTransportResponseHandler( TaskTransportRequest request )
     {
-        Preconditions.checkArgument( responseCount > 0, "responseCount must be greater than 0" );
-        this.awaitingResponseCount = responseCount;
-    }
-
-
-    @Override
-    public TaskTransportResponse newInstance()
-    {
-        return new TaskTransportResponse();
+        this.request = request;
     }
 
     @Override
-    public synchronized void handleResponse( final TaskTransportResponse response )
+    public TaskTransportResponse call()
     {
-        taskInfos.addAll( response.getTaskInfos() );
-        awaitingResponseCount--;
-        this.notifyAll();
-    }
-
-    @Override
-    public synchronized void handleException( final TransportException e )
-    {
-        transportException = e;
-        this.notifyAll();
-    }
-
-    @Override
-    public String executor()
-    {
-        return ThreadPool.Names.MANAGEMENT;
-    }
-
-    public synchronized List<TaskInfo> getTaskInfos()
-    {
-        final long startTime = System.currentTimeMillis();
-        while ( transportException == null && awaitingResponseCount > 0 )
+        BundleContext bundleContext = FrameworkUtil.getBundle( TaskManager.class ).getBundleContext();
+        ServiceReference<TaskManager> serviceReference = bundleContext.getServiceReference( TaskManager.class );
+        TaskManager handler = bundleContext.getService( serviceReference );
+        try
         {
-            long deltaTime = System.currentTimeMillis() - startTime;
-            if ( deltaTime >= THREAD_TIMEOUT )
-            {
-                //Should never happen. An ES timeout exception should have been handled
-                throw new TaskTransportTimeoutException( deltaTime );
-            }
+            return messageReceived( handler, request );
+        }
+        finally
+        {
+            bundleContext.ungetService( serviceReference );
+        }
+    }
 
-            try
-            {
-                this.wait( THREAD_TIMEOUT );
-            }
-            catch ( InterruptedException e )
-            {
-                throw Exceptions.unchecked( e );
-            }
+    private static TaskTransportResponse messageReceived( final TaskManager taskManager, final TaskTransportRequest request )
+    {
+        final List<TaskInfo> taskInfos;
+        switch ( request.getType() )
+        {
+            case BY_ID:
+                taskInfos = Optional.ofNullable( taskManager.getTaskInfo( request.getTaskId() ) ).
+                    map( Collections::singletonList ).
+                    orElse( Collections.emptyList() );
+                break;
+            case RUNNING:
+                taskInfos = taskManager.getRunningTasks();
+                break;
+            default:
+                taskInfos = taskManager.getAllTasks();
+                break;
         }
 
-        if ( transportException != null )
-        {
-            throw transportException;
-        }
-        return taskInfos.build();
-
-
+        return new TaskTransportResponse( taskInfos );
     }
 }
