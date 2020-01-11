@@ -15,7 +15,7 @@ import com.enonic.xp.context.Context;
 import com.enonic.xp.context.ContextAccessor;
 import com.enonic.xp.context.ContextBuilder;
 import com.enonic.xp.data.PropertyTree;
-import com.enonic.xp.elasticsearch.client.impl.EsClient;
+import com.enonic.xp.elastic.TestEsClient;
 import com.enonic.xp.event.EventPublisher;
 import com.enonic.xp.index.PatternIndexConfigDocument;
 import com.enonic.xp.internal.blobstore.cache.CachedBlobStore;
@@ -125,7 +125,7 @@ public class ResolveSyncWorkPerformanceBootstrap
 
     private RepositoryServiceImpl repositoryService;
 
-    private EsClient client;
+    private TestEsClient client;
 
     public static void boostrap()
         throws Exception
@@ -147,7 +147,7 @@ public class ResolveSyncWorkPerformanceBootstrap
 
     void startClient()
     {
-        client = new EsClient( "localhost", 9200 );
+        client = new TestEsClient( "localhost", 9200 );
     }
 
     void stopClient()

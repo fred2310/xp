@@ -64,10 +64,15 @@ import org.elasticsearch.common.xcontent.XContentFactory;
 
 import com.enonic.xp.elasticsearch.client.impl.nodes.GetNodesResponse;
 
-public final class EsClient
+public class EsClient
     implements Closeable
 {
-    private final RestHighLevelClient client;
+    protected RestHighLevelClient client;
+
+    public EsClient()
+    {
+        this( "localhost" );
+    }
 
     public EsClient( String hostname )
     {

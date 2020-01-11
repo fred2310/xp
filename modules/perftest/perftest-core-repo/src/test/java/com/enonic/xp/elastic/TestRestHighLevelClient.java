@@ -1,4 +1,4 @@
-package com.enonic.xp.repo.impl.elasticsearch;
+package com.enonic.xp.elastic;
 
 import java.util.HashMap;
 import java.util.List;
@@ -35,4 +35,5 @@ public class TestRestHighLevelClient
     {
         super( restClientBuilder, REGISTRY );
     }
+
 }

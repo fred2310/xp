@@ -25,7 +25,7 @@ import com.enonic.xp.repo.impl.version.TestQueryType;
 
 public class ResolveSyncWorkPerformanceTest
 {
-    @Test
+        @Test
     public void testReferencePerformance()
         throws Exception
     {
