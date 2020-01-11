@@ -36,6 +36,90 @@ public class ResolveSyncWorkPerformanceTest
         new Runner( opt ).run();
     }
 
+    public static class BaseBenchmarkState
+        extends ResolveSyncWorkPerformanceBootstrap
+    {
+        public void setup()
+        {
+            startClient();
+            setupServices();
+
+            CONTEXT_DRAFT.callWith( () -> {
+
+                this.ROOT_NODE = nodeService.getByPath( NodePath.create( NodePath.ROOT, "rootNode" ).build() );
+                this.NON_PUBLISHED_NODES_ROOT =
+                    nodeService.getByPath( NodePath.create( NodePath.ROOT, "rootNode/nonPublishedRoot" ).build() );
+                this.HALF_PUBLISHED_NODES_ROOT =
+                    nodeService.getByPath( NodePath.create( NodePath.ROOT, "rootNode/halfPublishedRoot" ).build() );
+                this.PUBLISHED_NODES_ROOT = nodeService.getByPath( NodePath.create( NodePath.ROOT, "rootNode/publishedRoot" ).build() );
+                this.PUBLISHED_DYNAMIC_ROOT =
+                    nodeService.getByPath( NodePath.create( NodePath.ROOT, "rootNode/publishedDynamicRoot" ).build() );
+
+                return 1;
+            } );
+
+        }
+
+        public void teardown()
+            throws Exception
+        {
+            stopClient();
+        }
+    }
+
+    @State(Scope.Benchmark)
+    public static class BenchmarkState
+        extends BaseBenchmarkState
+    {
+        @Setup
+        public void setup()
+        {
+            super.setup();
+        }
+
+        @TearDown
+        public void teardown()
+            throws Exception
+        {
+            super.teardown();
+        }
+    }
+
+    @State(Scope.Group)
+    public static class DynamicBenchmarkState
+        extends BaseBenchmarkState
+    {
+        int publishCount = 0;
+
+        @Setup
+        public void setup()
+        {
+            super.setup();
+
+            CONTEXT_DRAFT.callWith( () -> {
+
+                this.unpublish( PUBLISHED_DYNAMIC_ROOT, true );
+                publish( 0, PUBLISHED_DYNAMIC_ROOT );
+
+                return 1;
+            } );
+
+        }
+
+        @Setup(Level.Iteration)
+        public void beforeEach()
+        {
+            this.publish( ++this.publishCount, this.PUBLISHED_DYNAMIC_ROOT );
+        }
+
+        @TearDown
+        public void teardown()
+            throws Exception
+        {
+            super.teardown();
+        }
+    }
+
     @Benchmark
     public void inMemory( BenchmarkState state, Blackhole bh )
     {
@@ -143,6 +227,22 @@ public class ResolveSyncWorkPerformanceTest
             () -> run( state, TestQueryType.RARE, state.PUBLISHED_DYNAMIC_ROOT, state.NODE_SIZE - state.publishCount ) ) );
     }
 
+    /*    @Benchmark
+    @Group("dynamic_publishing")
+    public void sortedTerms_dynamic( DynamicBenchmarkState state, Blackhole bh )
+    {
+        bh.consume( ResolveSyncWorkPerformanceBootstrap.CONTEXT_DRAFT.callWith(
+            () -> run( state, TestQueryType.SORTED_TERMS, state.PUBLISHED_DYNAMIC_ROOT, state.NODE_SIZE - state.publishCount ) ) );
+    }*/
+
+/*    @Benchmark
+    public void branches( BenchmarkState state, Blackhole bh )
+    {
+        bh.consume(
+            ResolveSyncWorkPerformanceBootstrap.CONTEXT_DRAFT.callWith( () -> run( state, TestQueryType.BRANCHES_IN_VERSIONS ) ) );
+    }*/
+
+
     int run( DynamicBenchmarkState state, TestQueryType type, final Node root, final int expectedCount )
     {
 
@@ -150,8 +250,6 @@ public class ResolveSyncWorkPerformanceTest
             nodeId( root.id() ).
             build().
             execute();
-
-        System.out.println( "--------------expected: " + expectedCount + "--------------real: " + resolvedNodes.getSize() );
 
         Assertions.assertEquals( expectedCount, resolvedNodes.getSize() );
 
@@ -168,104 +266,5 @@ public class ResolveSyncWorkPerformanceTest
         Assertions.assertEquals( expectedCount, resolvedNodes.getSize() );
 
         return resolvedNodes.getSize();
-    }
-
-    public static class BaseBenchmarkState
-        extends ResolveSyncWorkPerformanceBootstrap
-    {
-        public void setup()
-        {
-            startClient();
-            setupServices();
-
-            CONTEXT_DRAFT.callWith( () -> {
-
-                this.ROOT_NODE = nodeService.getByPath( NodePath.create( NodePath.ROOT, "rootNode" ).build() );
-                this.NON_PUBLISHED_NODES_ROOT =
-                    nodeService.getByPath( NodePath.create( NodePath.ROOT, "rootNode/nonPublishedRoot" ).build() );
-                this.HALF_PUBLISHED_NODES_ROOT =
-                    nodeService.getByPath( NodePath.create( NodePath.ROOT, "rootNode/halfPublishedRoot" ).build() );
-                this.PUBLISHED_NODES_ROOT = nodeService.getByPath( NodePath.create( NodePath.ROOT, "rootNode/publishedRoot" ).build() );
-                this.PUBLISHED_DYNAMIC_ROOT =
-                    nodeService.getByPath( NodePath.create( NodePath.ROOT, "rootNode/publishedDynamicRoot" ).build() );
-
-                return 1;
-            } );
-
-        }
-
-        public void teardown()
-            throws Exception
-        {
-            stopClient();
-        }
-    }
-
-/*    @Benchmark
-    @Group("dynamic_publishing")
-    public void sortedTerms_dynamic( DynamicBenchmarkState state, Blackhole bh )
-    {
-        bh.consume( ResolveSyncWorkPerformanceBootstrap.CONTEXT_DRAFT.callWith(
-            () -> run( state, TestQueryType.SORTED_TERMS, state.PUBLISHED_DYNAMIC_ROOT, state.NODE_SIZE - state.publishCount ) ) );
-    }*/
-
-/*    @Benchmark
-    public void branches( BenchmarkState state, Blackhole bh )
-    {
-        bh.consume(
-            ResolveSyncWorkPerformanceBootstrap.CONTEXT_DRAFT.callWith( () -> run( state, TestQueryType.BRANCHES_IN_VERSIONS ) ) );
-    }*/
-
-    @State(Scope.Benchmark)
-    public static class BenchmarkState
-        extends BaseBenchmarkState
-    {
-        @Setup
-        public void setup()
-        {
-            super.setup();
-        }
-
-        @TearDown
-        public void teardown()
-            throws Exception
-        {
-            super.teardown();
-        }
-    }
-
-    @State(Scope.Group)
-    public static class DynamicBenchmarkState
-        extends BaseBenchmarkState
-    {
-        int publishCount = 0;
-
-        @Setup
-        public void setup()
-        {
-            super.setup();
-
-            CONTEXT_DRAFT.callWith( () -> {
-
-                this.unpublish( PUBLISHED_DYNAMIC_ROOT, true );
-                publish( 0, PUBLISHED_DYNAMIC_ROOT );
-
-                return 1;
-            } );
-
-        }
-
-        @Setup(Level.Iteration)
-        public void beforeEach()
-        {
-            this.publish( ++this.publishCount, this.PUBLISHED_DYNAMIC_ROOT );
-        }
-
-        @TearDown
-        public void teardown()
-            throws Exception
-        {
-            super.teardown();
-        }
     }
 }
