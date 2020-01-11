@@ -2,6 +2,7 @@ apply from: "$rootDir/gradle/osgi.gradle"
 
 dependencies {
     compile project( ':web:web-api' )
+    implementation project( ':core:core-internal' )
     compile "org.eclipse.jetty:jetty-server:${jettyVersion}"
     compile "org.eclipse.jetty:jetty-servlet:${jettyVersion}"
     compile "org.eclipse.jetty:jetty-servlets:${jettyVersion}"
@@ -10,6 +11,7 @@ dependencies {
     compile "org.eclipse.jetty.websocket:websocket-servlet:${jettyVersion}"
     compile "org.eclipse.jetty.websocket:javax-websocket-server-impl:${jettyVersion}"
     implementation "io.dropwizard.metrics:metrics-jetty9:${dropwizardMetricsVersion}"
+    testImplementation project( path: ':core:core-api', configuration: 'testOutput' )
 }
 
 jar {

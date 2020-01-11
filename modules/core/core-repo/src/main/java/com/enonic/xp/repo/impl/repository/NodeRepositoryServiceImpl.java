@@ -10,7 +10,6 @@ import com.fasterxml.jackson.databind.node.ObjectNode;
 import com.enonic.xp.index.IndexType;
 import com.enonic.xp.repo.impl.elasticsearch.ClusterHealthStatus;
 import com.enonic.xp.repo.impl.elasticsearch.ClusterStatusCode;
-import com.enonic.xp.repo.impl.index.ApplyMappingRequest;
 import com.enonic.xp.repo.impl.index.CreateIndexRequest;
 import com.enonic.xp.repo.impl.index.IndexServiceInternal;
 import com.enonic.xp.repository.CreateRepositoryParams;
@@ -40,8 +39,9 @@ public class NodeRepositoryServiceImpl
     @Override
     public void create( final CreateRepositoryParams params )
     {
-        createIndexes( params );
-        applyMappings( params );
+        doCreateIndex( params, IndexType.VERSION );
+        doCreateIndex( params, IndexType.BRANCH );
+        doCreateIndex( params, IndexType.COMMIT );
 
         checkClusterHealth();
     }
@@ -83,22 +83,17 @@ public class NodeRepositoryServiceImpl
         return indexServiceInternal.indicesExists( versionIndexName, branchIndexName, commitIndexName, masterSearchIndexName );
     }
 
-    private void createIndexes( final CreateRepositoryParams params )
-    {
-        doCreateIndex( params, IndexType.VERSION );
-        doCreateIndex( params, IndexType.BRANCH );
-        doCreateIndex( params, IndexType.COMMIT );
-    }
-
-
     private void doCreateIndex( final CreateRepositoryParams params, final IndexType indexType )
     {
         final RepositoryId repositoryId = params.getRepositoryId();
         final IndexSettings mergedSettings = mergeWithDefaultSettings( params, indexType );
 
+        final IndexMapping mergedMapping = mergeWithDefaultMapping( params, indexType );
+
         indexServiceInternal.createIndex( CreateIndexRequest.create().
             indexName( resolveStorageIndexName( repositoryId, indexType ) ).
             indexSettings( mergedSettings ).
+            mapping( mergedMapping ).
             build() );
     }
 
@@ -141,25 +136,6 @@ public class NodeRepositoryServiceImpl
         }
 
         return defaultSettings;
-    }
-
-    private void applyMappings( final CreateRepositoryParams params )
-    {
-        applyMapping( params, IndexType.BRANCH );
-        applyMapping( params, IndexType.VERSION );
-        applyMapping( params, IndexType.COMMIT );
-    }
-
-    private void applyMapping( final CreateRepositoryParams params, final IndexType indexType )
-    {
-        final RepositoryId repositoryId = params.getRepositoryId();
-        final IndexMapping mergedMapping = mergeWithDefaultMapping( params, indexType );
-
-        this.indexServiceInternal.applyMapping( ApplyMappingRequest.create().
-            indexName( resolveStorageIndexName( repositoryId, indexType ) ).
-            indexType( indexType ).
-            mapping( mergedMapping ).
-            build() );
     }
 
     private IndexMapping mergeWithDefaultMapping( final CreateRepositoryParams params, final IndexType indexType )

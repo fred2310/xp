@@ -1,16 +1,16 @@
 package com.enonic.xp.repo.impl.elasticsearch.query.translator.factory;
 
+import java.io.InputStream;
 import java.nio.charset.StandardCharsets;
 import java.util.TimeZone;
 
 import org.elasticsearch.common.Strings;
 import org.elasticsearch.common.xcontent.ToXContent;
 import org.elasticsearch.common.xcontent.XContentBuilder;
-import org.elasticsearch.common.xcontent.XContentFactory;
 import org.elasticsearch.search.aggregations.AggregationBuilder;
 import org.junit.jupiter.api.BeforeEach;
 
-import com.google.common.io.Resources;
+import com.enonic.xp.elasticsearch.client.impl.EsClient;
 
 public abstract class BaseTestBuilderFactory
 {
@@ -40,7 +40,7 @@ public abstract class BaseTestBuilderFactory
     protected final String getJson( final AggregationBuilder facetBuilder )
         throws Exception
     {
-        final XContentBuilder builder = XContentFactory.jsonBuilder();
+        final XContentBuilder builder = EsClient.jsonBuilder();
         builder.startObject();
         facetBuilder.toXContent( builder, ToXContent.EMPTY_PARAMS );
         builder.endObject();
@@ -51,9 +51,9 @@ public abstract class BaseTestBuilderFactory
     protected final String load( final String name )
         throws Exception
     {
-        try
+        try (final InputStream stream = getClass().getResourceAsStream( name ))
         {
-            return Resources.toString( getClass().getResource( name ), StandardCharsets.UTF_8 );
+            return new String( stream.readAllBytes(), StandardCharsets.UTF_8 );
         }
         catch ( Exception e )
         {

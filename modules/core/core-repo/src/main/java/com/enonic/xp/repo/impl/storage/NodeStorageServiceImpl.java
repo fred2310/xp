@@ -75,7 +75,7 @@ public class NodeStorageServiceImpl
             nodeVersionKey( nodeVersionKey ).
             context( context ).
             build();
-        storeBranchMetadata( storeBranchMetadataParams );
+        storeBranchMetadata( storeBranchMetadataParams, false );
 
         indexNode( node, nodeVersionId, context );
 
@@ -118,7 +118,7 @@ public class NodeStorageServiceImpl
             nodeVersionKey( nodeVersionKey ).
             context( context ).
             build();
-        storeBranchMetadata( storeBranchMetadataParams );
+        storeBranchMetadata( storeBranchMetadataParams, true );
 
         indexNode( node, nodeVersionId, context );
 
@@ -158,33 +158,30 @@ public class NodeStorageServiceImpl
     @Override
     public Node move( final MoveNodeParams params, final InternalContext context )
     {
-        final NodeBranchEntry nodeBranchEntry = this.branchService.get( params.getNode().id(), context );
-
-        final NodeVersionId nodeVersionId;
         final NodeVersionKey nodeVersionKey;
+        final NodeBranchEntry nodeBranchEntry = this.branchService.get( params.getNode().id(), context );
         if ( params.isUpdateMetadataOnly() )
         {
-            nodeVersionId = nodeBranchEntry.getVersionId();
             nodeVersionKey = nodeBranchEntry.getNodeVersionKey();
-
         }
         else
         {
-//            this.removeBranchFromCurrentVersion( nodeBranchEntry.getNodeId(), context );
+            this.removeBranchFromCurrentVersion( nodeBranchEntry.getNodeId(), context );
 
-            nodeVersionId = new NodeVersionId();
             nodeVersionKey = nodeVersionService.store( NodeVersion.from( params.getNode() ), context );
         }
 
-        storeVersionMetadata( params.getNode(), nodeVersionId, nodeVersionKey, context );
+        NodeVersionId nodeVersionId = params.getNodeVersionId();
+        if ( nodeVersionId == null )
+        {
+            nodeVersionId = new NodeVersionId();
+            storeVersionMetadata( params.getNode(), nodeVersionId, nodeVersionKey, context );
+        }
 
         final Node movedNode =
             moveInBranchAndReIndex( params.getNode(), nodeVersionId, nodeVersionKey, nodeBranchEntry.getNodePath(), context );
 
-        if ( !params.isUpdateMetadataOnly() )
-        {
-//            this.addBranchToNewVersion( movedNode, nodeVersionId, context );
-        }
+        this.addBranchToNewVersion( movedNode, nodeVersionId, context );
 
         return movedNode;
     }
@@ -193,7 +190,7 @@ public class NodeStorageServiceImpl
     public void delete( final NodeIds nodeIds, final InternalContext context )
     {
         final NodeBranchEntries nodeBranchEntries = branchService.get( nodeIds, true, context );
-//        nodeBranchEntries.forEach( nodeBranchEntry -> this.removeBranchFromCurrentVersion( nodeBranchEntry.getNodeId(), context ) );
+        nodeBranchEntries.forEach( nodeBranchEntry -> this.removeBranchFromCurrentVersion( nodeBranchEntry.getNodeId(), context ) );
 
         branchService.delete( nodeIds, context );
         indexDataService.delete( nodeIds, context );
@@ -218,7 +215,7 @@ public class NodeStorageServiceImpl
             nodeVersionKey( nodeVersionKey ).
             context( context ).
             build();
-        storeBranchMetadata( storeBranchMetadataParams );
+        storeBranchMetadata( storeBranchMetadataParams, true );
 
         indexNode( node, nodeVersionId, context );
 
@@ -238,7 +235,7 @@ public class NodeStorageServiceImpl
             throw new NodeNotFoundException( "Cannot find node version with id: " + nodeVersionId );
         }
 
-//        this.addBranchToNewVersion( node, nodeVersionId, context );
+        this.addBranchToNewVersion( node, nodeVersionId, context );
 
         this.branchService.store( NodeBranchEntry.create().
             nodeVersionId( nodeVersionId ).
@@ -523,15 +520,13 @@ public class NodeStorageServiceImpl
     private void storeVersionMetadata( final Node node, final NodeVersionId nodeVersionId, final NodeVersionKey nodeVersionKey,
                                        final InternalContext context )
     {
-        final Branches newBranches = Branches.from( context.getBranch() );
-
         this.versionService.store( NodeVersionMetadata.create().
             nodeId( node.id() ).
             nodeVersionId( nodeVersionId ).
             nodeVersionKey( nodeVersionKey ).
+            setBranches( Branches.from( context.getBranch() ) ).
             binaryBlobKeys( getBinaryBlobKeys( node.getAttachedBinaries() ) ).
             nodePath( node.path() ).
-            setBranches( newBranches ).
             timestamp( node.getTimestamp() ).
             build(), context );
     }
@@ -580,11 +575,12 @@ public class NodeStorageServiceImpl
         return filteredNodes.build();
     }
 
-    private void storeBranchMetadata( final StoreBranchMetadataParams storeBranchMetadataParams )
+    private void storeBranchMetadata( final StoreBranchMetadataParams storeBranchMetadataParams, boolean updateVersion )
     {
         final Node node = storeBranchMetadataParams.getNode();
 
-        //  this.updateBranchesInVersion( node, storeBranchMetadataParams.getNodeVersionId(), storeBranchMetadataParams.getContext() );
+        this.updateBranchesInVersion( node, storeBranchMetadataParams.getNodeVersionId(), storeBranchMetadataParams.getContext(),
+                                      updateVersion );
 
         this.branchService.store( NodeBranchEntry.create().
             nodeVersionId( storeBranchMetadataParams.getNodeVersionId() ).
@@ -596,10 +592,14 @@ public class NodeStorageServiceImpl
             build(), storeBranchMetadataParams.getContext() );
     }
 
-   /* private void updateBranchesInVersion( final Node node, final NodeVersionId newVersionId, final InternalContext internalContext )
+    private void updateBranchesInVersion( final Node node, final NodeVersionId newVersionId, final InternalContext internalContext,
+                                          boolean updateVersion )
     {
         this.removeBranchFromCurrentVersion( node.id(), internalContext );
-//        this.addBranchToNewVersion( node, newVersionId, internalContext );
+        if ( updateVersion )
+        {
+            this.addBranchToNewVersion( node, newVersionId, internalContext );
+        }
     }
 
     private void removeBranchFromCurrentVersion( final NodeId nodeId, InternalContext internalContext )
@@ -621,7 +621,7 @@ public class NodeStorageServiceImpl
                     setBranches( newBranches ).build(), internalContext );
             }
         }
-    }*/
+    }
 
     private void addBranchToNewVersion( final NodeBranchEntry node, final InternalContext internalContext )
     {

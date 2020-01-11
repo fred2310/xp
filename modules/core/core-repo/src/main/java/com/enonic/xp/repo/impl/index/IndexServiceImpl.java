@@ -29,7 +29,6 @@ import com.enonic.xp.repository.IndexMapping;
 import com.enonic.xp.repository.IndexSettings;
 import com.enonic.xp.repository.Repository;
 import com.enonic.xp.repository.RepositoryId;
-import com.enonic.xp.task.ProgressReporter;
 import com.enonic.xp.util.JsonHelper;
 
 @Component
@@ -69,29 +68,11 @@ public class IndexServiceImpl
             indexDataService( this.indexDataService ).
             nodeSearchService( this.nodeSearchService ).
             nodeVersionService( this.nodeVersionService ).
-            progressReporter( createLogProgressReporter() ).
+            listener( params.getListener() ).
             build().
             execute();
     }
 
-
-    private ProgressReporter createLogProgressReporter()
-    {
-        return new ProgressReporter()
-        {
-            @Override
-            public void progress( final int current, final int total )
-            {
-                LOG.info( "Progress: " + current + " / " + total );
-            }
-
-            @Override
-            public void info( final String message )
-            {
-                LOG.info( message );
-            }
-        };
-    }
 
     @Override
     public UpdateIndexSettingsResult updateIndexSettings( final UpdateIndexSettingsParams params )
@@ -199,17 +180,11 @@ public class IndexServiceImpl
         indexServiceInternal.getClusterHealth( CLUSTER_HEALTH_TIMEOUT_VALUE );
 
         final IndexSettings indexSettings = getSearchIndexSettings( repositoryId );
+        final IndexMapping indexMapping = getSearchIndexMapping( repositoryId );
+
         indexServiceInternal.createIndex( CreateIndexRequest.create().
             indexName( searchIndexName ).
             indexSettings( indexSettings ).
-            build() );
-
-        indexServiceInternal.getClusterHealth( CLUSTER_HEALTH_TIMEOUT_VALUE );
-
-        final IndexMapping indexMapping = getSearchIndexMapping( repositoryId );
-        indexServiceInternal.applyMapping( ApplyMappingRequest.create().
-            indexName( searchIndexName ).
-            indexType( IndexType.SEARCH ).
             mapping( indexMapping ).
             build() );
 
