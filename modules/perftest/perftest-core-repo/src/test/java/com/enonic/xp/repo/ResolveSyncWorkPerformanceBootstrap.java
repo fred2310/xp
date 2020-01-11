@@ -1,17 +1,11 @@
 package com.enonic.xp.repo;
 
 import java.io.File;
-import java.io.IOException;
-import java.io.UncheckedIOException;
 
-import org.apache.http.HttpHost;
 import org.elasticsearch.action.admin.indices.delete.DeleteIndexRequest;
 import org.elasticsearch.action.admin.indices.refresh.RefreshRequest;
 import org.elasticsearch.action.admin.indices.refresh.RefreshResponse;
 import org.elasticsearch.action.support.master.AcknowledgedResponse;
-import org.elasticsearch.client.RequestOptions;
-import org.elasticsearch.client.RestClient;
-import org.elasticsearch.client.RestHighLevelClient;
 import org.mockito.Mockito;
 
 import com.enonic.xp.blob.BlobStore;
@@ -21,6 +15,7 @@ import com.enonic.xp.context.Context;
 import com.enonic.xp.context.ContextAccessor;
 import com.enonic.xp.context.ContextBuilder;
 import com.enonic.xp.data.PropertyTree;
+import com.enonic.xp.elasticsearch.client.impl.EsClient;
 import com.enonic.xp.event.EventPublisher;
 import com.enonic.xp.index.PatternIndexConfigDocument;
 import com.enonic.xp.internal.blobstore.cache.CachedBlobStore;
@@ -41,7 +36,6 @@ import com.enonic.xp.repo.impl.binary.BinaryServiceImpl;
 import com.enonic.xp.repo.impl.branch.storage.BranchServiceImpl;
 import com.enonic.xp.repo.impl.commit.CommitServiceImpl;
 import com.enonic.xp.repo.impl.elasticsearch.IndexServiceInternalImpl;
-import com.enonic.xp.repo.impl.elasticsearch.TestRestHighLevelClient;
 import com.enonic.xp.repo.impl.elasticsearch.search.SearchDaoImpl;
 import com.enonic.xp.repo.impl.elasticsearch.storage.StorageDaoImpl;
 import com.enonic.xp.repo.impl.index.IndexServiceImpl;
@@ -131,7 +125,7 @@ public class ResolveSyncWorkPerformanceBootstrap
 
     private RepositoryServiceImpl repositoryService;
 
-    private RestHighLevelClient client;
+    private EsClient client;
 
     public static void boostrap()
         throws Exception
@@ -153,7 +147,7 @@ public class ResolveSyncWorkPerformanceBootstrap
 
     void startClient()
     {
-        client = new TestRestHighLevelClient( RestClient.builder( new HttpHost( "localhost", 9200, "http" ) ) );
+        client = new EsClient( "localhost", 9200 );
     }
 
     void stopClient()
@@ -279,14 +273,7 @@ public class ResolveSyncWorkPerformanceBootstrap
 
     protected RefreshResponse refresh()
     {
-        try
-        {
-            return client.indices().refresh( new RefreshRequest(), RequestOptions.DEFAULT );
-        }
-        catch ( IOException e )
-        {
-            throw new UncheckedIOException( e );
-        }
+        return client.indicesRefresh( new RefreshRequest() );
     }
 
     protected Node createDefaultRootNode()
@@ -528,15 +515,7 @@ public class ResolveSyncWorkPerformanceBootstrap
 
     private AcknowledgedResponse deleteAllIndices()
     {
-        try
-        {
-            return client.indices().delete( new DeleteIndexRequest( "search-*", "branch-*", "version-*", "commit-*" ),
-                                            RequestOptions.DEFAULT );
-        }
-        catch ( IOException e )
-        {
-            throw new UncheckedIOException( e );
-        }
+        return client.indicesDelete( new DeleteIndexRequest( "search-*", "branch-*", "version-*", "commit-*" ) );
     }
 
 }
