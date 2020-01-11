@@ -1,4 +1,4 @@
-package com.enonic.xp.repo.impl.node;
+package com.enonic.xp.repo;
 
 import java.io.File;
 import java.io.IOException;
@@ -30,13 +30,11 @@ import com.enonic.xp.node.CreateRootNodeParams;
 import com.enonic.xp.node.FindNodesByParentParams;
 import com.enonic.xp.node.FindNodesByParentResult;
 import com.enonic.xp.node.Node;
-import com.enonic.xp.node.NodeBranchEntries;
 import com.enonic.xp.node.NodeBranchEntry;
 import com.enonic.xp.node.NodeId;
 import com.enonic.xp.node.NodeIds;
 import com.enonic.xp.node.NodePath;
 import com.enonic.xp.node.NodeVersionMetadata;
-import com.enonic.xp.node.PushNodesResult;
 import com.enonic.xp.node.RefreshMode;
 import com.enonic.xp.repo.impl.InternalContext;
 import com.enonic.xp.repo.impl.binary.BinaryServiceImpl;
@@ -47,6 +45,11 @@ import com.enonic.xp.repo.impl.elasticsearch.TestRestHighLevelClient;
 import com.enonic.xp.repo.impl.elasticsearch.search.SearchDaoImpl;
 import com.enonic.xp.repo.impl.elasticsearch.storage.StorageDaoImpl;
 import com.enonic.xp.repo.impl.index.IndexServiceImpl;
+import com.enonic.xp.repo.impl.node.CreateNodeCommand;
+import com.enonic.xp.repo.impl.node.CreateRootNodeCommand;
+import com.enonic.xp.repo.impl.node.NodeConstants;
+import com.enonic.xp.repo.impl.node.NodeServiceImpl;
+import com.enonic.xp.repo.impl.node.ResolveSyncWorkCommand;
 import com.enonic.xp.repo.impl.node.dao.NodeVersionServiceImpl;
 import com.enonic.xp.repo.impl.repository.NodeRepositoryServiceImpl;
 import com.enonic.xp.repo.impl.repository.RepositoryEntryServiceImpl;
@@ -76,7 +79,8 @@ import com.enonic.xp.security.auth.AuthenticationInfo;
 
 public class ResolveSyncWorkPerformanceBootstrap
 {
-    public static final int NODE_SIZE = 22000;
+    public static final User TEST_DEFAULT_USER =
+        User.create().key( PrincipalKey.ofUser( IdProviderKey.system(), "test-user" ) ).login( "test-user" ).build();
 
     protected static final Repository MY_REPO = Repository.create().
         id( RepositoryId.from( "myrepo" ) ).
@@ -95,8 +99,19 @@ public class ResolveSyncWorkPerformanceBootstrap
         authInfo( NodeConstants.NODE_SU_AUTH_INFO ).
         build();
 
-    public static final User TEST_DEFAULT_USER =
-        User.create().key( PrincipalKey.ofUser( IdProviderKey.system(), "test-user" ) ).login( "test-user" ).build();
+    public final int NODE_SIZE = 22000;
+
+    protected Node ROOT_NODE;
+
+    protected Node NON_PUBLISHED_NODES_ROOT;
+
+    protected Node HALF_PUBLISHED_NODES_ROOT;
+
+    protected Node PUBLISHED_NODES_ROOT;
+
+    protected Node PUBLISHED_DYNAMIC_ROOT;
+
+    protected NodeServiceImpl nodeService;
 
     private BinaryServiceImpl binaryService;
 
@@ -116,9 +131,25 @@ public class ResolveSyncWorkPerformanceBootstrap
 
     private RepositoryServiceImpl repositoryService;
 
-    private NodeServiceImpl nodeService;
-
     private RestHighLevelClient client;
+
+    public static void boostrap()
+        throws Exception
+    {
+        final ResolveSyncWorkPerformanceBootstrap beforeTestSetup = new ResolveSyncWorkPerformanceBootstrap();
+        beforeTestSetup.startClient();
+        beforeTestSetup.deleteAllIndices();
+        beforeTestSetup.setupServices();
+        beforeTestSetup.initTestData();
+//         beforeTestSetup.publish( NODE_SIZE);
+        beforeTestSetup.stopClient();
+    }
+
+    public static void main( String[] args )
+        throws Exception
+    {
+        boostrap();
+    }
 
     void startClient()
     {
@@ -239,24 +270,11 @@ public class ResolveSyncWorkPerformanceBootstrap
 
     ResolveSyncWorkCommand.Builder prepareResolveSyncWorkCommandBuilder()
     {
-        NodeId rootNode = CONTEXT_DRAFT.callWith( () -> getNodeByPath( NodePath.create( NodePath.ROOT, "rootNode" ).build() ).id() );
         return ResolveSyncWorkCommand.create().
-            nodeId( rootNode ).
             target( CONTEXT_MASTER.getBranch() ).
             indexServiceInternal( indexServiceInternal ).
             storageService( storageService ).
             searchService( searchService );
-    }
-
-    Node getNodeByPath( final NodePath nodePath )
-    {
-        return GetNodeByPathCommand.create().
-            indexServiceInternal( indexServiceInternal ).
-            storageService( storageService ).
-            searchService( searchService ).
-            nodePath( nodePath ).
-            build().
-            execute();
     }
 
     protected RefreshResponse refresh()
@@ -308,19 +326,6 @@ public class ResolveSyncWorkPerformanceBootstrap
             execute();
     }
 
-    protected NodeIds doDeleteNode( final NodeId nodeId )
-    {
-        final NodeBranchEntries result = DeleteNodeByIdCommand.create().
-            nodeId( nodeId ).
-            indexServiceInternal( this.indexServiceInternal ).
-            storageService( this.storageService ).
-            searchService( this.searchService ).
-            build().
-            execute();
-
-        return NodeIds.from( result.getKeys() );
-    }
-
     protected void createRepository( final Repository repository )
     {
         final AccessControlList rootPermissions = AccessControlList.of( AccessControlEntry.create().
@@ -337,9 +342,8 @@ public class ResolveSyncWorkPerformanceBootstrap
             callWith( () -> {
                 this.repositoryService.createRepository( CreateRepositoryParams.create().
                     repositoryId( repository.getId() ).
-//                    setBranches( repository.getBranches() ).
-    rootPermissions( rootPermissions ).
-                        build() );
+                    rootPermissions( rootPermissions ).
+                    build() );
 
                 repository.getBranches().
                     stream().
@@ -390,6 +394,7 @@ public class ResolveSyncWorkPerformanceBootstrap
                 parent( parent.path() ).
                 data( data ).
                 build() );
+
             if ( level < maxLevels )
             {
                 createNodes( node, numberOfNodes, maxLevels, level + 1 );
@@ -405,26 +410,56 @@ public class ResolveSyncWorkPerformanceBootstrap
                 createRepository( MY_REPO );
             }
             createDefaultRootNode();
-            Node rootNode = createNode( CreateNodeParams.create().
+            ROOT_NODE = createNode( CreateNodeParams.create().
                 name( "rootNode" ).
                 parent( NodePath.ROOT ).
                 build() );
 
-            createNodes( rootNode, NODE_SIZE, 1, 1 );
+            NON_PUBLISHED_NODES_ROOT = createNode( CreateNodeParams.create().
+                name( "nonPublishedRoot" ).
+                parent( ROOT_NODE.path() ).
+                data( new PropertyTree() ).
+                build() );
+
+            PUBLISHED_NODES_ROOT = createNode( CreateNodeParams.create().
+                name( "publishedRoot" ).
+                parent( ROOT_NODE.path() ).
+                data( new PropertyTree() ).
+                build() );
+
+            HALF_PUBLISHED_NODES_ROOT = createNode( CreateNodeParams.create().
+                name( "halfPublishedRoot" ).
+                parent( ROOT_NODE.path() ).
+                data( new PropertyTree() ).
+                build() );
+
+            PUBLISHED_DYNAMIC_ROOT = createNode( CreateNodeParams.create().
+                name( "publishedDynamicRoot" ).
+                parent( ROOT_NODE.path() ).
+                data( new PropertyTree() ).
+                build() );
+
+            createNodes( NON_PUBLISHED_NODES_ROOT, NODE_SIZE, 1, 1 );
+            createNodes( PUBLISHED_NODES_ROOT, NODE_SIZE, 1, 1 );
+            createNodes( HALF_PUBLISHED_NODES_ROOT, NODE_SIZE, 1, 1 );
+            createNodes( PUBLISHED_DYNAMIC_ROOT, NODE_SIZE, 1, 1 );
+
+            nodeService.refresh( RefreshMode.ALL );
+
+            this.publish( 0, this.ROOT_NODE );
+            this.publish( NODE_SIZE, PUBLISHED_NODES_ROOT );
+            this.publish( NODE_SIZE / 2, HALF_PUBLISHED_NODES_ROOT );
 
             return refresh();
         } );
     }
 
-    void publish( final int number )
+    public void publish( final int number, final Node root )
     {
         CONTEXT_DRAFT.callWith( () -> {
-            Node rootNode = getNodeByPath( NodePath.create( NodePath.ROOT, "rootNode" ).build() );
-
             final FindNodesByParentResult findNodesByParentResult = nodeService.findByParent( FindNodesByParentParams.create().
                 recursive( true ).
-                parentPath( NodePath.create( "/rootNode" ).
-                    build() ).
+                parentPath( root.path() ).
                 build() );
 
             NodeIds.Builder nodesToPublish = NodeIds.create();
@@ -448,28 +483,47 @@ public class ResolveSyncWorkPerformanceBootstrap
                 i++;
             }
 
-            final PushNodesResult pushNodesResult = nodeService.push( NodeIds.create().
-                add( rootNode.id() ).
+            nodeService.push( NodeIds.create().
+                add( root.id() ).
                 addAll( nodesToPublish.build() ).
                 build(), CONTEXT_MASTER.getBranch() );
 
             nodeService.refresh( RefreshMode.ALL );
 
-            System.out.println( "------------------Published: " + pushNodesResult.getSuccessful().getSize() + "-----------------" );
             return 1;
         } );
     }
 
-    public static void boostrap()
-        throws Exception
+    public void unpublish( final Node node, final boolean includeChildren )
     {
-        final ResolveSyncWorkPerformanceBootstrap beforeTestSetup = new ResolveSyncWorkPerformanceBootstrap();
-        beforeTestSetup.startClient();
-//        beforeTestSetup.deleteAllIndices();
-        beforeTestSetup.setupServices();
-        beforeTestSetup.initTestData();
-//         beforeTestSetup.publish( NODE_SIZE);
-        beforeTestSetup.stopClient();
+        CONTEXT_MASTER.callWith( () -> {
+
+            if ( includeChildren )
+            {
+                final FindNodesByParentResult result =
+                    this.nodeService.findByParent( FindNodesByParentParams.create().parentPath( node.path() ).build() );
+                result.getNodeIds().forEach( this::doUnpublish );
+            }
+
+            this.doUnpublish( node.id() );
+
+            this.nodeService.refresh( RefreshMode.ALL );
+
+            return 1;
+        } );
+    }
+
+    private void doUnpublish( final NodeId nodeId )
+    {
+        CONTEXT_MASTER.callWith( () -> {
+            final FindNodesByParentResult result =
+                this.nodeService.findByParent( FindNodesByParentParams.create().parentId( nodeId ).build() );
+
+            result.getNodeIds().forEach( this::doUnpublish );
+
+            this.nodeService.deleteById( nodeId );
+            return 1;
+        } );
     }
 
     private AcknowledgedResponse deleteAllIndices()
@@ -483,12 +537,6 @@ public class ResolveSyncWorkPerformanceBootstrap
         {
             throw new UncheckedIOException( e );
         }
-    }
-
-    public static void main( String[] args )
-        throws Exception
-    {
-        boostrap();
     }
 
 }

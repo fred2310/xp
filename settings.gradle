@@ -55,6 +55,8 @@ include 'admin:admin-event'
 
 include 'itest:itest-core'
 
+include 'perftest:perftest-core-repo'
+
 include 'tools:testing'
 
 include 'lib:lib-common'
