@@ -1,4 +1,4 @@
-package com.enonic.xp.repo;
+package com.enonic.xp.repo.bootstrap;
 
 import java.io.File;
 
@@ -41,6 +41,7 @@ import com.enonic.xp.repo.impl.elasticsearch.storage.StorageDaoImpl;
 import com.enonic.xp.repo.impl.index.IndexServiceImpl;
 import com.enonic.xp.repo.impl.node.CreateNodeCommand;
 import com.enonic.xp.repo.impl.node.CreateRootNodeCommand;
+import com.enonic.xp.repo.impl.node.HasUnpublishedChildrenCommand;
 import com.enonic.xp.repo.impl.node.NodeConstants;
 import com.enonic.xp.repo.impl.node.NodeServiceImpl;
 import com.enonic.xp.repo.impl.node.ResolveSyncWorkCommand;
@@ -52,6 +53,7 @@ import com.enonic.xp.repo.impl.repository.SystemRepoInitializer;
 import com.enonic.xp.repo.impl.search.NodeSearchServiceImpl;
 import com.enonic.xp.repo.impl.search.NodeVersionBranchesInVersionsSearcher;
 import com.enonic.xp.repo.impl.search.NodeVersionDiffCompositeSearcher;
+import com.enonic.xp.repo.impl.search.NodeVersionDiffHasPublishedSearcher;
 import com.enonic.xp.repo.impl.search.NodeVersionDiffInMemorySearcher;
 import com.enonic.xp.repo.impl.search.NodeVersionDiffRareSearcher;
 import com.enonic.xp.repo.impl.search.NodeVersionDiffSortedTermsSearcher;
@@ -71,7 +73,7 @@ import com.enonic.xp.security.acl.AccessControlEntry;
 import com.enonic.xp.security.acl.AccessControlList;
 import com.enonic.xp.security.auth.AuthenticationInfo;
 
-public class ResolveSyncWorkPerformanceBootstrap
+public class PerformanceTestBootstrap
 {
     public static final User TEST_DEFAULT_USER =
         User.create().key( PrincipalKey.ofUser( IdProviderKey.system(), "test-user" ) ).login( "test-user" ).build();
@@ -81,13 +83,13 @@ public class ResolveSyncWorkPerformanceBootstrap
         branches( Branches.from( ContentConstants.BRANCH_DRAFT, ContentConstants.BRANCH_MASTER ) ).
         build();
 
-    protected static final Context CONTEXT_DRAFT = ContextBuilder.create().
+    public static final Context CONTEXT_DRAFT = ContextBuilder.create().
         branch( ContentConstants.BRANCH_DRAFT ).
         repositoryId( MY_REPO.getId() ).
         authInfo( NodeConstants.NODE_SU_AUTH_INFO ).
         build();
 
-    protected static final Context CONTEXT_MASTER = ContextBuilder.create().
+    public static final Context CONTEXT_MASTER = ContextBuilder.create().
         branch( ContentConstants.BRANCH_MASTER ).
         repositoryId( MY_REPO.getId() ).
         authInfo( NodeConstants.NODE_SU_AUTH_INFO ).
@@ -95,15 +97,15 @@ public class ResolveSyncWorkPerformanceBootstrap
 
     public final int NODE_SIZE = 22000;
 
-    protected Node ROOT_NODE;
+    public Node ROOT_NODE;
 
-    protected Node NON_PUBLISHED_NODES_ROOT;
+    public Node NON_PUBLISHED_NODES_ROOT;
 
-    protected Node HALF_PUBLISHED_NODES_ROOT;
+    public Node HALF_PUBLISHED_NODES_ROOT;
 
-    protected Node PUBLISHED_NODES_ROOT;
+    public Node PUBLISHED_NODES_ROOT;
 
-    protected Node PUBLISHED_DYNAMIC_ROOT;
+    public Node PUBLISHED_DYNAMIC_ROOT;
 
     protected NodeServiceImpl nodeService;
 
@@ -130,7 +132,7 @@ public class ResolveSyncWorkPerformanceBootstrap
     public static void boostrap()
         throws Exception
     {
-        final ResolveSyncWorkPerformanceBootstrap beforeTestSetup = new ResolveSyncWorkPerformanceBootstrap();
+        final PerformanceTestBootstrap beforeTestSetup = new PerformanceTestBootstrap();
         beforeTestSetup.startClient();
         beforeTestSetup.deleteAllIndices();
         beforeTestSetup.setupServices();
@@ -145,18 +147,18 @@ public class ResolveSyncWorkPerformanceBootstrap
         boostrap();
     }
 
-    void startClient()
+    protected void startClient()
     {
         client = new TestEsClient( "localhost", 9200 );
     }
 
-    void stopClient()
+    protected void stopClient()
         throws Exception
     {
         client.close();
     }
 
-    void setupServices()
+    protected void setupServices()
     {
         final BlobStore blobStore = CachedBlobStore.create().
             blobStore( new FileBlobStore( new File( "C:\\es\\elasticsearch-7.5.1\\data\\blobs" ) ) ).
@@ -209,6 +211,7 @@ public class ResolveSyncWorkPerformanceBootstrap
         this.searchService.setNodeVersionDiffCompositeSearcher( new NodeVersionDiffCompositeSearcher( searchDao ) );
         this.searchService.setNodeVersionDiffInMemorySearcher( new NodeVersionDiffInMemorySearcher( searchDao ) );
         this.searchService.setNodeVersionBranchesInVersionsSearcher( new NodeVersionBranchesInVersionsSearcher( searchDao ) );
+        this.searchService.setNodeVersionDiffHasPublishedSearcher( new NodeVersionDiffHasPublishedSearcher( searchDao ) );
 
         IndexServiceImpl indexService = new IndexServiceImpl();
         indexService.setIndexDataService( indexedDataService );
@@ -262,13 +265,22 @@ public class ResolveSyncWorkPerformanceBootstrap
         this.nodeService.setRepositoryService( this.repositoryService );
     }
 
-    ResolveSyncWorkCommand.Builder prepareResolveSyncWorkCommandBuilder()
+    public ResolveSyncWorkCommand.Builder prepareResolveSyncWorkCommandBuilder()
     {
         return ResolveSyncWorkCommand.create().
             target( CONTEXT_MASTER.getBranch() ).
             indexServiceInternal( indexServiceInternal ).
             storageService( storageService ).
             searchService( searchService );
+    }
+
+    public HasUnpublishedChildrenCommand.Builder prepareHasUnpublishedChildrenCommandBuilder()
+    {
+        return HasUnpublishedChildrenCommand.create().
+            target( CONTEXT_MASTER.getBranch() ).
+            storageService( this.storageService ).
+            indexServiceInternal( this.indexServiceInternal ).
+            searchService( this.searchService );
     }
 
     protected RefreshResponse refresh()

@@ -58,6 +58,7 @@ import com.enonic.xp.repo.impl.repository.SystemRepoInitializer;
 import com.enonic.xp.repo.impl.search.NodeSearchServiceImpl;
 import com.enonic.xp.repo.impl.search.NodeVersionBranchesInVersionsSearcher;
 import com.enonic.xp.repo.impl.search.NodeVersionDiffCompositeSearcher;
+import com.enonic.xp.repo.impl.search.NodeVersionDiffHasPublishedSearcher;
 import com.enonic.xp.repo.impl.search.NodeVersionDiffInMemorySearcher;
 import com.enonic.xp.repo.impl.search.NodeVersionDiffRareSearcher;
 import com.enonic.xp.repo.impl.search.NodeVersionDiffSortedTermsSearcher;
@@ -213,6 +214,7 @@ public abstract class AbstractNodeTest
         this.searchService.setNodeVersionDiffCompositeSearcher( new NodeVersionDiffCompositeSearcher( this.searchDao ) );
         this.searchService.setNodeVersionDiffInMemorySearcher( new NodeVersionDiffInMemorySearcher( this.searchDao ) );
         this.searchService.setNodeVersionBranchesInVersionsSearcher( new NodeVersionBranchesInVersionsSearcher( this.searchDao ) );
+        this.searchService.setNodeVersionDiffHasPublishedSearcher( new NodeVersionDiffHasPublishedSearcher( this.searchDao ) );
 
         this.snapshotService = new SnapshotServiceImpl();
         this.snapshotService.setClient( client );

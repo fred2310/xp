@@ -6,6 +6,8 @@ import org.junit.jupiter.api.Test;
 import com.enonic.xp.node.Node;
 import com.enonic.xp.node.NodeId;
 import com.enonic.xp.node.NodePath;
+import com.enonic.xp.node.NodeState;
+import com.enonic.xp.node.SetNodeStateParams;
 
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
@@ -51,6 +53,18 @@ public class HasUnpublishedChildrenCommandTest
 
         assertTrue( resolve( node1 ) );
         assertFalse( resolve( node1_1 ) );
+
+        pushNodes( CTX_OTHER.getBranch(), node1_1.id() );
+        refresh();
+        assertFalse( resolve( node1 ) );
+
+        this.nodeService.setNodeState( SetNodeStateParams.create().
+            nodeId( node1_1.id() ).
+            nodeState( NodeState.PENDING_DELETE ).
+            build() );
+        refresh();
+        assertTrue( resolve( node1 ) );
+
     }
 
     private boolean resolve( final Node node1 )

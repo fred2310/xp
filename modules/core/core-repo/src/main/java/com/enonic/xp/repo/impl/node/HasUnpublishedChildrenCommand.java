@@ -4,14 +4,14 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import com.enonic.xp.branch.Branch;
+import com.enonic.xp.branch.Branches;
 import com.enonic.xp.context.ContextAccessor;
 import com.enonic.xp.node.Node;
 import com.enonic.xp.node.NodeId;
 import com.enonic.xp.repo.impl.SingleRepoStorageSource;
-import com.enonic.xp.repo.impl.search.result.SearchResult;
+import com.enonic.xp.repo.impl.version.search.CalculateUniqueVersionsQuery;
 import com.enonic.xp.repo.impl.version.search.ExcludeEntries;
 import com.enonic.xp.repo.impl.version.search.ExcludeEntry;
-import com.enonic.xp.repo.impl.version.search.NodeVersionDiffQuery;
 
 public class HasUnpublishedChildrenCommand
     extends AbstractNodeCommand
@@ -29,8 +29,6 @@ public class HasUnpublishedChildrenCommand
         parent = builder.parent;
     }
 
-    private long startTime;
-
     public boolean execute()
     {
         final Node parentNode = doGetById( parent );
@@ -40,28 +38,32 @@ public class HasUnpublishedChildrenCommand
             return false;
         }
 
-        startTime = System.currentTimeMillis();
-        LOG.info( "Starting HasUnpublishedChildrenCommand..." );
-
-        final SearchResult result = nodeSearchService.query( NodeVersionDiffQuery.create().
-            source( ContextAccessor.current().getBranch() ).
-            target( target ).
+        final CalculateUniqueVersionsQuery.Builder queryBuilder = CalculateUniqueVersionsQuery.create().
             nodePath( parentNode.path() ).
-            size( 0 ).
-            versionsSize( 0 ).
-                                                                 /* addAggregationQuery( RareTermsAggregationQuery.create( "versions" ).
-                                                                      maxDocCount( 1 ).
-                                                                      fieldName( "versionId" ).
-                                                                      build() ).*/
-                                                                     excludes( ExcludeEntries.create().
-                                                                     add( new ExcludeEntry( parentNode.path(), false ) ).
-                                                                     build() ).
-                build(), SingleRepoStorageSource.create( ContextAccessor.current().getRepositoryId(),
-                                                         SingleRepoStorageSource.Type.BRANCH ) );
+            excludes( ExcludeEntries.create().
+                add( new ExcludeEntry( parentNode.path(), false ) ).
+                build() ).
+            size( 0 );
 
-        LOG.info( "Executed in {} ms", ( System.currentTimeMillis() - this.startTime ) );
+        final SingleRepoStorageSource storageSource =
+            SingleRepoStorageSource.create( ContextAccessor.current().getRepositoryId(), SingleRepoStorageSource.Type.BRANCH );
 
-        return result.getTotalHits() > 0;
+        final Branch source = ContextAccessor.current().getBranch();
+
+        final int uniqueSource = this.nodeSearchService.query( queryBuilder.branches( Branches.from( source ) ).build(), storageSource );
+        final int uniqueTarget = this.nodeSearchService.query( queryBuilder.branches( Branches.from( target ) ).build(), storageSource );
+        final int uniqueBoth =
+            this.nodeSearchService.query( queryBuilder.branches( Branches.from( source, target ) ).build(), storageSource );
+
+        final int uniqueSourceDeleted =
+            this.nodeSearchService.query( queryBuilder.branches( Branches.from( source ) ).deleted( true ).build(), storageSource );
+        final int uniqueTargetDeleted =
+            this.nodeSearchService.query( queryBuilder.branches( Branches.from( target ) ).deleted( true ).build(), storageSource );
+        final int uniqueBothDeleted =
+            this.nodeSearchService.query( queryBuilder.branches( Branches.from( source, target ) ).deleted( true ).build(), storageSource );
+
+        return uniqueSource != uniqueBoth || uniqueTarget != uniqueBoth || uniqueSourceDeleted != uniqueBothDeleted ||
+            uniqueTargetDeleted != uniqueBothDeleted;
     }
 
     public static Builder create()

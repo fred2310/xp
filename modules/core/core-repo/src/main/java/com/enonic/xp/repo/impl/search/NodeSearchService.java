@@ -7,6 +7,7 @@ import com.enonic.xp.repo.impl.ReturnFields;
 import com.enonic.xp.repo.impl.SearchSource;
 import com.enonic.xp.repo.impl.branch.search.NodeBranchQuery;
 import com.enonic.xp.repo.impl.search.result.SearchResult;
+import com.enonic.xp.repo.impl.version.search.CalculateUniqueVersionsQuery;
 import com.enonic.xp.repo.impl.version.search.NodeVersionDiffQuery;
 
 public interface NodeSearchService
@@ -24,4 +25,6 @@ public interface NodeSearchService
     SearchResult query( final NodeBranchQuery nodeBranchQuery, final SearchSource source );
 
     SearchResult query( final NodeVersionDiffQuery query, final SearchSource source );
+
+    int query( final CalculateUniqueVersionsQuery query, final SearchSource source );
 }

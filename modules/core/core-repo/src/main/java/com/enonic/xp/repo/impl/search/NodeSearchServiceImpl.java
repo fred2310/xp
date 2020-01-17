@@ -14,6 +14,7 @@ import com.enonic.xp.repo.impl.commit.storage.CommitIndexPath;
 import com.enonic.xp.repo.impl.search.result.SearchResult;
 import com.enonic.xp.repo.impl.version.TestQueryType;
 import com.enonic.xp.repo.impl.version.VersionIndexPath;
+import com.enonic.xp.repo.impl.version.search.CalculateUniqueVersionsQuery;
 import com.enonic.xp.repo.impl.version.search.NodeVersionDiffQuery;
 
 @Component
@@ -44,6 +45,8 @@ public class NodeSearchServiceImpl
     private NodeVersionDiffInMemorySearcher nodeVersionDiffInMemorySearcher;
 
     private NodeVersionBranchesInVersionsSearcher nodeVersionBranchesInVersionsSearcher;
+
+    private NodeVersionDiffHasPublishedSearcher nodeVersionDiffHasPublishedSearcher;
 
     @Override
     public SearchResult query( final NodeQuery query, final SearchSource source )
@@ -107,7 +110,6 @@ public class NodeSearchServiceImpl
     @Override
     public SearchResult query( final NodeVersionDiffQuery query, final SearchSource source )
     {
-
         if ( TestQueryType.RARE == query.getTestQueryType() )
         {
             return nodeVersionDiffRareSearcher.find( query, source );
@@ -131,6 +133,12 @@ public class NodeSearchServiceImpl
 
         throw new RuntimeException( "ahtung!!!!!!!" );
 
+    }
+
+    @Override
+    public int query( final CalculateUniqueVersionsQuery query, final SearchSource source )
+    {
+        return nodeVersionDiffHasPublishedSearcher.find( query, source );
     }
 
     @Reference
@@ -168,5 +176,11 @@ public class NodeSearchServiceImpl
         final NodeVersionBranchesInVersionsSearcher nodeVersionBranchesInVersionsSearcher )
     {
         this.nodeVersionBranchesInVersionsSearcher = nodeVersionBranchesInVersionsSearcher;
+    }
+
+    @Reference
+    public void setNodeVersionDiffHasPublishedSearcher( final NodeVersionDiffHasPublishedSearcher nodeVersionDiffHasPublishedSearcher )
+    {
+        this.nodeVersionDiffHasPublishedSearcher = nodeVersionDiffHasPublishedSearcher;
     }
 }

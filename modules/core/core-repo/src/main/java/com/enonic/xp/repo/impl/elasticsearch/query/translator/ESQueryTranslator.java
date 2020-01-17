@@ -24,6 +24,7 @@ import com.enonic.xp.repo.impl.elasticsearch.query.translator.factory.FilterBuil
 import com.enonic.xp.repo.impl.elasticsearch.query.translator.factory.SortQueryBuilderFactory;
 import com.enonic.xp.repo.impl.elasticsearch.suggistion.query.SuggestionQueryBuilderFactory;
 import com.enonic.xp.repo.impl.search.SearchRequest;
+import com.enonic.xp.repo.impl.version.search.CalculateUniqueVersionsQuery;
 import com.enonic.xp.repo.impl.version.search.NodeVersionDiffQuery;
 
 public class ESQueryTranslator
@@ -60,6 +61,11 @@ public class ESQueryTranslator
         if ( query instanceof NodeVersionsQuery )
         {
             return doTranslate( request, new NodeVersionsQueryTranslator( (NodeVersionsQuery) query ) );
+        }
+
+        if ( query instanceof CalculateUniqueVersionsQuery )
+        {
+            return doTranslate( request, new NodeUniqueVersionsTranslator( (CalculateUniqueVersionsQuery) query ) );
         }
 
         throw new UnsupportedOperationException( "Queries of type " + query.getClass() + " not implemented yes" );
