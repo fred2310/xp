@@ -95,7 +95,7 @@ public class PerformanceTestBootstrap
         authInfo( NodeConstants.NODE_SU_AUTH_INFO ).
         build();
 
-    public final int NODE_SIZE = 22000;
+    public final int NODE_SIZE = 44000;
 
     public Node ROOT_NODE;
 
