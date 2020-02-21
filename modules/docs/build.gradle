@@ -1,5 +1,5 @@
 apply plugin: 'java-base'
-apply plugin: 'com.moowork.grunt'
+apply plugin: 'com.github.node-gradle.grunt'
 
 node {
     download = true
@@ -30,7 +30,7 @@ task javadocAll( type: Javadoc ) {
 
 task javadocZip( type: Zip ) {
     from javadocAll
-    classifier = 'javadoc'
+    archiveClassifier.set( 'javadoc' )
 }
 
 task gruntAll( type: GruntTask, dependsOn: npmInstall ) {
@@ -43,7 +43,7 @@ task gruntAll( type: GruntTask, dependsOn: npmInstall ) {
 
 task libdocZip( type: Zip ) {
     from gruntAll
-    classifier = 'libdoc'
+    archiveClassifier.set( 'libdoc' )
 }
 
 publishing.publications {
