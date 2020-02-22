@@ -48,7 +48,7 @@ test {
         excludeTags 'elasticsearch'
     }
     systemProperty 'java.awt.headless', 'true'
-    jvmArgs '-Xmx2048m', '-noverify', '-XX:TieredStopAtLevel=1'
+    jvmArgs '-noverify', '-XX:TieredStopAtLevel=1'
 }
 
 task integrationTest(type: Test) {
