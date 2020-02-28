@@ -14,7 +14,8 @@ dependencies {
     }
     compile "jakarta.annotation:jakarta.annotation-api:${jakartaAnnotationApiVersion}"
     implementation "io.dropwizard.metrics:metrics-jetty9:${dropwizardMetricsVersion}"
-    testImplementation project( path: ':core:core-api', configuration: 'testOutput' )
+
+    testImplementation( testFixtures( project(":core:core-api") ) )
 }
 
 jar {
